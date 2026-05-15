@@ -8,6 +8,8 @@ use Hemil09\TypeGen\Generators\ModelGenerator;
 use Hemil09\TypeGen\Mappers\CastTypeMapper;
 use Hemil09\TypeGen\Mappers\RuleToTypeMapper;
 use Hemil09\TypeGen\Mappers\RuleTree;
+use Hemil09\TypeGen\Relations\RelationDetector;
+use Hemil09\TypeGen\Relations\RelationResolver;
 use Hemil09\TypeGen\Scanners\ClassScanner;
 use Hemil09\TypeGen\Writers\TypeScriptWriter;
 use Illuminate\Console\Command;
@@ -24,8 +26,6 @@ class GenerateCommand extends Command
         $config = config('typegen');
         $mapper = new CastTypeMapper($config['cast_map'] ?? []);
         $writer = new TypeScriptWriter($config);
-        $generator = new ModelGenerator($mapper, $config);
-
         $blocks = [];
 
         // 1. Enums
@@ -57,32 +57,53 @@ class GenerateCommand extends Command
         }
 
         // 3. Models
-        $models = $scanner->scan(
-            [$config['paths']['models']],
-            $config['scan_mode'] ?? 'attribute',
-        );
+        $modelPath = $config['paths']['models'] ?? app_path('Models');
+        $modelBlocks = [];
+        if (is_dir($modelPath)) {
+            $detector = new RelationDetector;
+            $resolver = new RelationResolver($detector);
+            $modelGenerator = new ModelGenerator($mapper, $resolver, $config);
 
-        if (! empty($models)) {
-            $this->info('Generating types for '.count($models).' models...');
-            foreach ($models as $model) {
-                $this->line("  ✓ model {$model}");
-                $blocks[] = $generator->generate($model);
+            $models = $scanner->scan([$modelPath], $config['scan_mode'] ?? 'attribute');
+
+            // BFS queue with cycle detection
+            $queue = array_values($models);
+            $seen = array_flip($queue);
+
+            while (! empty($queue)) {
+                $modelClass = array_shift($queue);
+                $this->line("  ✓ model {$modelClass}");
+
+                $result = $modelGenerator->generate($modelClass);
+                $modelBlocks[] = $result['block'];
+
+                // Add any newly-discovered related models to the queue
+                foreach ($result['discovered'] as $discoveredClass) {
+                    if (! isset($seen[$discoveredClass]) && class_exists($discoveredClass)) {
+                        $seen[$discoveredClass] = true;
+                        $queue[] = $discoveredClass;
+                        $this->line("    ↳ discovered {$discoveredClass}");
+                    }
+                }
             }
         }
 
-        if (empty($blocks)) {
+        // Assemble: enums -> form requests -> models
+        $allBlocks = [...$blocks, ...$modelBlocks];
+
+        if (empty($allBlocks)) {
             $this->warn('No classes found. Did you add the #[TypeScript] attribute?');
 
             return self::SUCCESS;
         }
 
         if ($this->option('dry-run')) {
-            $this->line("\n".implode("\n\n", $blocks));
+            $this->line("\n".implode("\n\n", $allBlocks));
 
             return self::SUCCESS;
         }
 
-        $path = $writer->write($blocks);
+        $path = $writer->write($allBlocks);
         $this->info("\nWritten to: {$path}");
 
         return self::SUCCESS;
