@@ -48,6 +48,7 @@ export interface User {
 | Eloquent Support | ✅ | ✅ |
 | Enum Support | ✅ | ✅ |
 | **FormRequest → DTO** | ✅ | ❌ |
+| **Relationship Auto-Discovery** | ✅ | ❌ |
 | **Linked Enum Casts** | ✅ | ⚠️ (Manual) |
 | Attribute Driven | ✅ | ✅ |
 | Inertia Native | ✅ | ⚠️ |
@@ -76,13 +77,60 @@ php artisan typescript:generate
 
 ---
 
+## 🔗 Relationships
+
+Opt into relationship type generation per-model:
+
+```php
+#[TypeScript(includeRelations: ['posts', 'profile'])]
+class User extends Model { /* ... */ }
+```
+
+Related models (`Post`, `Profile`) are **auto-discovered** — no need to mark them separately. Generated output:
+
+```ts
+export interface User {
+  id: number;
+  posts?: Post[];
+  profile?: Profile | null;
+}
+
+export interface Post { /* ... */ }
+export interface Profile { /* ... */ }
+```
+
+Relations are always emitted as **optional** (`?`) because they're only present when eager-loaded. This matches runtime reality.
+
+### Polymorphic relations
+
+`MorphTo` is auto-supported when you register a morph map:
+
+```php
+Relation::enforceMorphMap([
+    'post' => Post::class,
+    'video' => Video::class,
+]);
+```
+
+Generates:
+
+```ts
+export interface Comment {
+  commentable?: (Post | Video) | null;
+}
+```
+
+Without a morph map, emits `unknown | null` with a comment.
+
+---
+
 ## 🗺 Roadmap
 - [x] Enum support (v0.2)
 - [x] FormRequest → DTO (v0.2)
-- [ ] Eloquent relationships (v0.3)
-- [ ] Route parameter types (v0.3)
-- [ ] Watch mode (v0.3)
-
+- [x] Eloquent relationships (v0.3)
+- [ ] Route parameter types (v0.4)
+- [ ] Watch mode (v0.4)
+- [ ] Custom Cast class resolver (v0.4)
 
 ## Configuration
 
@@ -91,12 +139,6 @@ See `config/typegen.php` for all available options, including:
 - Custom cast mapping.
 - Prefix/suffix for generated names.
 - Including/excluding timestamps and hidden fields.
-
-## Roadmap
-- [ ] Enum support (v0.2)
-- [ ] FormRequest -> request DTO (v0.2)
-- [ ] Relationship support
-- [ ] Route params (Ziggy compatibility)
 
 ## License
 MIT

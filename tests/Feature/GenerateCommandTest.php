@@ -84,3 +84,37 @@ it('handles messy form requests without crashing', function () {
 
     @unlink($outputPath);
 });
+
+it('auto-discovers related models and emits them together', function () {
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    $outputPath = sys_get_temp_dir().'/v03.ts';
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    expect($contents)
+        ->toContain('export interface User')
+        ->toContain('posts?: Post[]')
+        ->toContain('profile?: Profile | null')
+        ->toContain('export interface Post')   // auto-discovered
+        ->toContain('export interface Profile'); // auto-discovered
+
+    @unlink($outputPath);
+});
+
+it('handles cycles without infinite loop', function () {
+    // User -> Post -> User
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/CyclicModels');
+    $outputPath = sys_get_temp_dir().'/cycle.ts';
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+    expect($contents)->toContain('export interface User');
+    expect($contents)->toContain('export interface Post');
+
+    @unlink($outputPath);
+});
