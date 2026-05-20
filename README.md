@@ -57,14 +57,14 @@ export interface User {
 
 ## 📦 Installation
 ```bash
-composer require hemil09/laravel-typegen
+composer require hemilrajput/laravel-typegen
 ```
 
 ## 🛠 Usage
 
 ### 1. Tag your classes
 ```php
-use Hemil09\TypeGen\Attributes\TypeScript;
+use hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 class User extends Model { ... }

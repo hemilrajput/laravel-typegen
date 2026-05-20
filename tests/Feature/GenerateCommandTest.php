@@ -1,6 +1,6 @@
 <?php
 
-use Hemil09\TypeGen\Tests\TestCase;
+use hemilrajput\TypeGen\Tests\TestCase;
 
 uses(TestCase::class);
 

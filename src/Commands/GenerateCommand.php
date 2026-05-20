@@ -1,17 +1,17 @@
 <?php
 
-namespace Hemil09\TypeGen\Commands;
+namespace hemilrajput\TypeGen\Commands;
 
-use Hemil09\TypeGen\Generators\EnumGenerator;
-use Hemil09\TypeGen\Generators\FormRequestGenerator;
-use Hemil09\TypeGen\Generators\ModelGenerator;
-use Hemil09\TypeGen\Mappers\CastTypeMapper;
-use Hemil09\TypeGen\Mappers\RuleToTypeMapper;
-use Hemil09\TypeGen\Mappers\RuleTree;
-use Hemil09\TypeGen\Relations\RelationDetector;
-use Hemil09\TypeGen\Relations\RelationResolver;
-use Hemil09\TypeGen\Scanners\ClassScanner;
-use Hemil09\TypeGen\Writers\TypeScriptWriter;
+use hemilrajput\TypeGen\Generators\EnumGenerator;
+use hemilrajput\TypeGen\Generators\FormRequestGenerator;
+use hemilrajput\TypeGen\Generators\ModelGenerator;
+use hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
+use hemilrajput\TypeGen\Mappers\RuleTree;
+use hemilrajput\TypeGen\Relations\RelationDetector;
+use hemilrajput\TypeGen\Relations\RelationResolver;
+use hemilrajput\TypeGen\Scanners\ClassScanner;
+use hemilrajput\TypeGen\Writers\TypeScriptWriter;
 use Illuminate\Console\Command;
 
 class GenerateCommand extends Command

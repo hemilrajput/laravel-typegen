@@ -1,8 +1,8 @@
 <?php
 
-namespace Hemil09\TypeGen\Tests;
+namespace hemilrajput\TypeGen\Tests;
 
-use Hemil09\TypeGen\TypeGenServiceProvider;
+use hemilrajput\TypeGen\TypeGenServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra

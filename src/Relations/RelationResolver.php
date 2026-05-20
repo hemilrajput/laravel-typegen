@@ -1,6 +1,6 @@
 <?php
 
-namespace Hemil09\TypeGen\Relations;
+namespace hemilrajput\TypeGen\Relations;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;

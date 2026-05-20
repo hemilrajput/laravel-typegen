@@ -1,9 +1,9 @@
 <?php
 
-namespace Hemil09\TypeGen\Tests\Fixtures\Models;
+namespace hemilrajput\TypeGen\Tests\Fixtures\Models;
 
-use Hemil09\TypeGen\Attributes\TypeScript;
-use Hemil09\TypeGen\Tests\Fixtures\Enums\PostStatus;
+use hemilrajput\TypeGen\Attributes\TypeScript;
+use hemilrajput\TypeGen\Tests\Fixtures\Enums\PostStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;

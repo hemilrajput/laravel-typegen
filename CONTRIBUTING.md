@@ -23,7 +23,7 @@ Please be respectful and professional in all interactions.
 
 ## Local Development
 ```bash
-git clone git@github.com:hemil09/laravel-typegen.git
+git clone git@github.com:hemilrajput/laravel-typegen.git
 cd laravel-typegen
 composer install
 vendor/bin/pest

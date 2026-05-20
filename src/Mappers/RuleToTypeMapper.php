@@ -1,6 +1,6 @@
 <?php
 
-namespace Hemil09\TypeGen\Mappers;
+namespace hemilrajput\TypeGen\Mappers;
 
 use Illuminate\Validation\Rules\Enum as EnumRule;
 use Illuminate\Validation\Rules\In as InRule;

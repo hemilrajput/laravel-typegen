@@ -1,8 +1,8 @@
 <?php
 
-namespace Hemil09\TypeGen\Tests\Fixtures\CyclicModels;
+namespace hemilrajput\TypeGen\Tests\Fixtures\CyclicModels;
 
-use Hemil09\TypeGen\Attributes\TypeScript;
+use hemilrajput\TypeGen\Attributes\TypeScript;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

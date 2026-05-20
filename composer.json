@@ -1,5 +1,5 @@
 {
-    "name": "hemil09/laravel-typegen",
+    "name": "hemilrajput/laravel-typegen",
     "description": "Generate TypeScript types from Eloquent models, Enums & FormRequests.",
     "keywords": ["laravel", "typescript", "inertia", "eloquent", "types", "codegen"],
     "license": "MIT",
@@ -22,18 +22,18 @@
     },
     "autoload": {
         "psr-4": {
-            "Hemil09\\TypeGen\\": "src/"
+            "hemilrajput\\TypeGen\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Hemil09\\TypeGen\\Tests\\": "tests/"
+            "hemilrajput\\TypeGen\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Hemil09\\TypeGen\\TypeGenServiceProvider"
+                "hemilrajput\\TypeGen\\TypeGenServiceProvider"
             ]
         }
     },

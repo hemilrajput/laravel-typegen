@@ -1,6 +1,6 @@
 <?php
 
-use Hemil09\TypeGen\Relations\RelationDetector;
+use hemilrajput\TypeGen\Relations\RelationDetector;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Hemil09\TypeGen\Attributes;
+namespace hemilrajput\TypeGen\Attributes;
 
 use Attribute;
 

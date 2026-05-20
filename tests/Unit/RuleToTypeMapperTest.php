@@ -1,6 +1,6 @@
 <?php
 
-use Hemil09\TypeGen\Mappers\RuleToTypeMapper;
+use hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
 use Illuminate\Validation\Rules\In;
 
 beforeEach(fn () => $this->mapper = new RuleToTypeMapper);

@@ -1,6 +1,6 @@
 <?php
 
-use Hemil09\TypeGen\Mappers\RuleTree;
+use hemilrajput\TypeGen\Mappers\RuleTree;
 
 it('builds a tree from dot notation', function () {
     $tree = (new RuleTree)->build([

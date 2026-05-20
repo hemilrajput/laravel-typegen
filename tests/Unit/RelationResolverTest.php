@@ -1,8 +1,8 @@
 <?php
 
-use Hemil09\TypeGen\Relations\RelationDetector;
-use Hemil09\TypeGen\Relations\RelationResolver;
-use Hemil09\TypeGen\Tests\TestCase;
+use hemilrajput\TypeGen\Relations\RelationDetector;
+use hemilrajput\TypeGen\Relations\RelationResolver;
+use hemilrajput\TypeGen\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;

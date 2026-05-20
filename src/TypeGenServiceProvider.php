@@ -1,8 +1,8 @@
 <?php
 
-namespace Hemil09\TypeGen;
+namespace hemilrajput\TypeGen;
 
-use Hemil09\TypeGen\Commands\GenerateCommand;
+use hemilrajput\TypeGen\Commands\GenerateCommand;
 use Illuminate\Support\ServiceProvider;
 
 class TypeGenServiceProvider extends ServiceProvider

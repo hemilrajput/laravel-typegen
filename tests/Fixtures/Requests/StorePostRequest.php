@@ -1,8 +1,8 @@
 <?php
 
-namespace Hemil09\TypeGen\Tests\Fixtures\Requests;
+namespace hemilrajput\TypeGen\Tests\Fixtures\Requests;
 
-use Hemil09\TypeGen\Attributes\TypeScript;
+use hemilrajput\TypeGen\Attributes\TypeScript;
 use Illuminate\Foundation\Http\FormRequest;
 
 #[TypeScript]

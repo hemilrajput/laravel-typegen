@@ -1,6 +1,6 @@
 <?php
 
-namespace Hemil09\TypeGen\Writers;
+namespace hemilrajput\TypeGen\Writers;
 
 class TypeScriptWriter
 {

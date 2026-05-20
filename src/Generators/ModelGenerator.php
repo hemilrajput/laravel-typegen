@@ -1,10 +1,10 @@
 <?php
 
-namespace Hemil09\TypeGen\Generators;
+namespace hemilrajput\TypeGen\Generators;
 
-use Hemil09\TypeGen\Attributes\TypeScript;
-use Hemil09\TypeGen\Mappers\CastTypeMapper;
-use Hemil09\TypeGen\Relations\RelationResolver;
+use hemilrajput\TypeGen\Attributes\TypeScript;
+use hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use hemilrajput\TypeGen\Relations\RelationResolver;
 use Illuminate\Database\Eloquent\Model;
 use ReflectionClass;
 
