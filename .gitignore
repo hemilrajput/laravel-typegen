@@ -7,3 +7,6 @@ phpunit.xml
 .env
 .DS_Store
 Thumbs.db
+/docs/node_modules/
+/docs/.vitepress/dist/
+/docs/.vitepress/cache/
