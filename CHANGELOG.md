@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **VitePress Documentation Site**: Built a fully-featured VitePress documentation site with comprehensive setup guides, Spatie migration comparison, and Inertia integrations.
+- **CI/CD Quality Gates**: Integrated GitHub Actions workflows running Pest testing matrix, Pint style checking, and PHPStan static analysis on every push/PR.
+- **Auto-Deployment Workflow**: Added GitHub Actions deployment for compiling and publishing VitePress docs to GitHub Pages.
 
 ## [0.4.0] - 2026-05-28
 
@@ -52,3 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release with Eloquent model generation.
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
+
+[1.2.0]: https://github.com/hemilrajput/laravel-typegen/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/hemilrajput/laravel-typegen/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/hemilrajput/laravel-typegen/compare/v0.4.0...v1.0.0
+[0.4.0]: https://github.com/hemilrajput/laravel-typegen/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/hemilrajput/laravel-typegen/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/hemilrajput/laravel-typegen/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/hemilrajput/laravel-typegen/releases/tag/v0.1.0
