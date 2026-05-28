@@ -35,15 +35,20 @@ class GenerateCommand extends Command
         if ($this->option('watch')) {
             $this->info('Watching for changes in models, enums, and form requests...');
             $lastRun = 0;
+            $lastFiles = [];
 
             while (app()->runningInConsole()) {
                 $files = $this->getWatchFiles($config);
-                $changed = false;
+                $changed = count($files) !== count($lastFiles)
+                    || ! empty(array_diff($files, $lastFiles))
+                    || ! empty(array_diff($lastFiles, $files));
 
-                foreach ($files as $file) {
-                    if (file_exists($file) && filemtime($file) > $lastRun) {
-                        $changed = true;
-                        break;
+                if (! $changed) {
+                    foreach ($files as $file) {
+                        if (file_exists($file) && filemtime($file) > $lastRun) {
+                            $changed = true;
+                            break;
+                        }
                     }
                 }
 
@@ -55,6 +60,7 @@ class GenerateCommand extends Command
                         $this->error('Generation failed: '.$e->getMessage());
                     }
                     $lastRun = time();
+                    $lastFiles = $files;
                 }
 
                 sleep(1);

@@ -56,10 +56,9 @@ class ClassScanner
         if (! preg_match('/namespace\s+([^;]+);/', $contents, $ns)) {
             return null;
         }
-        if (! preg_match('/(?:class|enum)\s+(\w+)/', $contents, $cls)) {
-            return null;
-        }
 
-        return trim($ns[1]).'\\'.$cls[1];
+        $className = pathinfo($path, PATHINFO_FILENAME);
+
+        return trim($ns[1]).'\\'.$className;
     }
 }
