@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
+  base: '/laravel-typegen/',
   title: 'Laravel TypeGen',
   description: 'Generate TypeScript types from Eloquent models, Enums & FormRequests.',
   themeConfig: {
