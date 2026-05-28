@@ -185,6 +185,10 @@ class GenerateCommand extends Command
         // Assemble: enums -> form requests -> models
         $allBlocks = [...$blocks, ...$modelBlocks];
 
+        if (! empty($modelBlocks) && ($config['relations']['wrap_with_relation'] ?? true)) {
+            $allBlocks = ['export type Relation<T> = T;', ...$allBlocks];
+        }
+
         if (empty($allBlocks)) {
             $this->warn('No classes found. Did you add the #[TypeScript] attribute?');
 

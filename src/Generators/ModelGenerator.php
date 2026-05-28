@@ -7,6 +7,7 @@ use hemilrajput\TypeGen\Attributes\TypeScriptIgnore;
 use hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use hemilrajput\TypeGen\Relations\RelationResolver;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 
 class ModelGenerator
@@ -89,15 +90,44 @@ class ModelGenerator
             $fields[$attr] = $this->mapper->toTypeScript($cast);
         }
 
-        // fillable (columns not in casts → assume string)
-        foreach ($instance->getFillable() as $attr) {
-            if (isset($fields[$attr]) || in_array($attr, $ignore, true)) {
-                continue;
+        // Database columns inspection (fallback if schema table exists)
+        $table = $instance->getTable();
+        $dbColumns = [];
+        try {
+            if (Schema::hasTable($table)) {
+                $dbColumns = Schema::getColumns($table);
             }
-            if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
-                continue;
+        } catch (\Throwable $e) {
+            // Gracefully ignore DB exceptions if DB is not configured or table doesn't exist yet
+        }
+
+        if (! empty($dbColumns)) {
+            foreach ($dbColumns as $column) {
+                $attr = $column['name'];
+                if (isset($fields[$attr]) || in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
+                    continue;
+                }
+
+                $type = $this->dbTypeToTypeScript($column['type_name']);
+                if ($column['nullable'] ?? false) {
+                    $type = "{$type} | null";
+                }
+                $fields[$attr] = $type;
             }
-            $fields[$attr] = 'string';
+        } else {
+            // fillable fallback
+            foreach ($instance->getFillable() as $attr) {
+                if (isset($fields[$attr]) || in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
+                    continue;
+                }
+                $fields[$attr] = 'string';
+            }
         }
 
         // timestamps
@@ -105,15 +135,27 @@ class ModelGenerator
             $createdAt = $instance->getCreatedAtColumn() ?? 'created_at';
             $updatedAt = $instance->getUpdatedAtColumn() ?? 'updated_at';
 
-            if (! in_array($createdAt, $ignore, true)) {
+            if (! in_array($createdAt, $ignore, true) && ! isset($fields[$createdAt])) {
                 $fields[$createdAt] = 'string';
             }
-            if (! in_array($updatedAt, $ignore, true)) {
+            if (! in_array($updatedAt, $ignore, true) && ! isset($fields[$updatedAt])) {
                 $fields[$updatedAt] = 'string';
             }
         }
 
         return $fields;
+    }
+
+    protected function dbTypeToTypeScript(string $typeName): string
+    {
+        $typeName = strtolower($typeName);
+
+        return match ($typeName) {
+            'integer', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'float', 'double', 'decimal', 'numeric' => 'number',
+            'boolean', 'bool' => 'boolean',
+            'json' => 'any',
+            default => 'string',
+        };
     }
 
     /**
@@ -158,6 +200,8 @@ class ModelGenerator
 
     protected function relationToType(array $resolved, array &$discovered): string
     {
+        $wrap = $this->config['relations']['wrap_with_relation'] ?? true;
+
         if ($resolved['kind'] === 'morph_to') {
             if ($resolved['morph_types']) {
                 foreach ($resolved['morph_types'] as $morphClass) {
@@ -168,21 +212,33 @@ class ModelGenerator
                     $resolved['morph_types']
                 ));
 
-                return "({$union}) | null";
+                $type = "({$union}) | null";
+
+                return $wrap ? "Relation<{$type}>" : $type;
             }
 
-            return 'unknown | null';
+            $type = 'unknown | null';
+
+            return $wrap ? "Relation<{$type}>" : $type;
         }
 
         if (! $resolved['related']) {
-            return 'unknown';
+            $type = 'unknown';
+
+            return $wrap ? "Relation<{$type}>" : $type;
         }
 
         $discovered[] = $resolved['related'];
         $shortName = class_basename($resolved['related']);
 
-        return $resolved['kind'] === 'collection'
-            ? "{$shortName}[]"
-            : "{$shortName} | null";
+        if ($resolved['kind'] === 'collection') {
+            $type = "{$shortName}[]";
+
+            return $wrap ? "Relation<{$type}>" : $type;
+        }
+
+        $type = "{$shortName} | null";
+
+        return $wrap ? "Relation<{$type}>" : $type;
     }
 }

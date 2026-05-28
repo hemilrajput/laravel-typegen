@@ -16,5 +16,13 @@ class TestCase extends Orchestra
     {
         // Setup default config for tests
         $app['config']->set('typegen', include __DIR__.'/../config/typegen.php');
+
+        // Setup default database to use sqlite in memory
+        $app['config']->set('database.default', 'testbench');
+        $app['config']->set('database.connections.testbench', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
     }
 }

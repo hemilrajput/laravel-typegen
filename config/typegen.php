@@ -68,4 +68,13 @@ return [
     'include_timestamps' => true,
     'include_hidden' => false, // respect $hidden
     'nullable_by_default' => false, // unless schema/cast says otherwise
+
+    /*
+    |---------------------------------------------------------------------
+    | Relations wrapping
+    |---------------------------------------------------------------------
+    */
+    'relations' => [
+        'wrap_with_relation' => true,
+    ],
 ];

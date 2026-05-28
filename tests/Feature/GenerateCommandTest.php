@@ -1,6 +1,7 @@
 <?php
 
 use hemilrajput\TypeGen\Tests\TestCase;
+use Illuminate\Support\Facades\Schema;
 
 uses(TestCase::class);
 
@@ -96,8 +97,8 @@ it('auto-discovers related models and emits them together', function () {
 
     expect($contents)
         ->toContain('export interface User')
-        ->toContain('posts?: Post[]')
-        ->toContain('profile?: Profile | null')
+        ->toContain('posts?: Relation<Post[]>')
+        ->toContain('profile?: Relation<Profile | null>')
         ->toContain('export interface Post')   // auto-discovered
         ->toContain('export interface Profile'); // auto-discovered
 
@@ -172,6 +173,75 @@ it('respects ignore attributes and parameters', function () {
         ->and($ignoredUserBlock)->not->toContain('posts?')
         ->and($ignoredUserBlock)->not->toContain('profile?')
         ->and($ignoredUserBlock)->not->toContain('created_at:');
+
+    @unlink($outputPath);
+});
+
+it('infers types and nullability from database schema when table exists', function () {
+    $outputPath = sys_get_temp_dir().'/db_fallback.ts';
+
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    config()->set('typegen.output.path', $outputPath);
+
+    // Create the users table in sqlite memory DB
+    Schema::create('users', function ($table) {
+        $table->id();
+        $table->string('name');
+        $table->string('email')->nullable();
+        $table->integer('age');
+        $table->boolean('is_active');
+        $table->timestamps();
+    });
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    // Extract User block
+    $start = strpos($contents, 'export interface User {');
+    $end = strpos($contents, '}', $start) + 1;
+    $userBlock = substr($contents, $start, $end - $start);
+
+    expect($userBlock)->toContain('name: string;')
+        ->and($userBlock)->toContain('email: string | null;') // inferred nullability from DB
+        ->and($userBlock)->toContain('age: number;')          // inferred integer -> number from DB
+        ->and($userBlock)->toContain('is_active: number;');   // SQLite maps boolean to integer/number
+
+    @unlink($outputPath);
+    Schema::drop('users');
+});
+
+it('wraps relationships in Relation helper by default', function () {
+    $outputPath = sys_get_temp_dir().'/relations_wrap.ts';
+
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    expect($contents)->toContain('export type Relation<T> = T;')
+        ->and($contents)->toContain('posts?: Relation<Post[]>;')
+        ->and($contents)->toContain('profile?: Relation<Profile | null>;');
+
+    @unlink($outputPath);
+});
+
+it('respects relations wrap configuration', function () {
+    $outputPath = sys_get_temp_dir().'/relations_nowrap.ts';
+
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    config()->set('typegen.output.path', $outputPath);
+    config()->set('typegen.relations.wrap_with_relation', false);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    expect($contents)->not->toContain('export type Relation<T> = T;')
+        ->and($contents)->toContain('posts?: Post[];')
+        ->and($contents)->toContain('profile?: Profile | null;');
 
     @unlink($outputPath);
 });
