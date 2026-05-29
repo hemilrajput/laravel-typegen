@@ -23,20 +23,11 @@ class RelationResolver
     {
         $detected = $this->detector->detect($modelClass, $methodName);
 
-        if ($detected['kind'] === 'unknown') {
-            return [
-                'kind' => 'unknown',
-                'related' => null,
-                'morph_types' => null,
-                'error' => "Method {$modelClass}::{$methodName} did not return a recognized Eloquent relation type.",
-            ];
-        }
-
         try {
             /** @var Model $instance */
             $instance = new $modelClass;
             /** @var Relation $relation */
-            $relation = $instance->{$methodName}();
+            $relation = Relation::noConstraints(fn () => $instance->{$methodName}());
         } catch (Throwable $e) {
             return [
                 'kind' => $detected['kind'],
@@ -44,6 +35,21 @@ class RelationResolver
                 'morph_types' => null,
                 'error' => "Failed to instantiate relation {$modelClass}::{$methodName}: {$e->getMessage()}",
             ];
+        }
+
+        if ($detected['kind'] === 'unknown') {
+            if ($relation instanceof Relation) {
+                $detected = $this->detector->detectFromClass($relation::class);
+            }
+
+            if ($detected['kind'] === 'unknown') {
+                return [
+                    'kind' => 'unknown',
+                    'related' => null,
+                    'morph_types' => null,
+                    'error' => "Method {$modelClass}::{$methodName} did not return a recognized Eloquent relation type.",
+                ];
+            }
         }
 
         // MorphTo — related class is dynamic, read morph map

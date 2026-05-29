@@ -54,25 +54,31 @@ class RelationDetector
             return ['kind' => 'unknown', 'return_type' => null];
         }
 
-        $typeName = $returnType->getName();
+        return $this->detectFromClass($returnType->getName());
+    }
 
+    /**
+     * @return array{kind: 'collection'|'single'|'morph_to'|'unknown', return_type: ?string}
+     */
+    public function detectFromClass(string $className): array
+    {
         // MorphTo gets special handling — related class is dynamic
-        if ($typeName === MorphTo::class || is_subclass_of($typeName, MorphTo::class)) {
-            return ['kind' => 'morph_to', 'return_type' => $typeName];
+        if ($className === MorphTo::class || is_subclass_of($className, MorphTo::class)) {
+            return ['kind' => 'morph_to', 'return_type' => $className];
         }
 
         foreach (self::COLLECTION_RELATIONS as $relationClass) {
-            if ($typeName === $relationClass || is_subclass_of($typeName, $relationClass)) {
-                return ['kind' => 'collection', 'return_type' => $typeName];
+            if ($className === $relationClass || is_subclass_of($className, $relationClass)) {
+                return ['kind' => 'collection', 'return_type' => $className];
             }
         }
 
         foreach (self::SINGLE_RELATIONS as $relationClass) {
-            if ($typeName === $relationClass || is_subclass_of($typeName, $relationClass)) {
-                return ['kind' => 'single', 'return_type' => $typeName];
+            if ($className === $relationClass || is_subclass_of($className, $relationClass)) {
+                return ['kind' => 'single', 'return_type' => $className];
             }
         }
 
-        return ['kind' => 'unknown', 'return_type' => $typeName];
+        return ['kind' => 'unknown', 'return_type' => $className];
     }
 }

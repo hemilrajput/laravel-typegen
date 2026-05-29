@@ -63,3 +63,20 @@ it('returns an error without crashing when relation fails to instantiate', funct
 
     expect($resolved['error'])->not->toBeNull();
 });
+
+class TestModelWithoutReturnType extends Model
+{
+    public function things()
+    {
+        return $this->hasMany(TestPostForResolver::class);
+    }
+}
+
+it('resolves relations even when php return type is missing', function () {
+    $resolved = (new RelationResolver(new RelationDetector))
+        ->resolve(TestModelWithoutReturnType::class, 'things');
+
+    expect($resolved['kind'])->toBe('collection');
+    expect($resolved['related'])->toBe(TestPostForResolver::class);
+    expect($resolved['error'])->toBeNull();
+});
