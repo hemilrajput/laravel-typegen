@@ -1,9 +1,9 @@
 <?php
 
-namespace hemilrajput\TypeGen\Tests\Fixtures\Models;
+namespace Hemilrajput\TypeGen\Tests\Fixtures\Models;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
-use hemilrajput\TypeGen\Attributes\TypeScriptIgnore;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScriptIgnore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;

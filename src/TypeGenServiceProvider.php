@@ -1,10 +1,10 @@
 <?php
 
-namespace hemilrajput\TypeGen;
+namespace Hemilrajput\TypeGen;
 
-use hemilrajput\TypeGen\Commands\GenerateCommand;
-use hemilrajput\TypeGen\Commands\GenerateRoutesCommand;
-use hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Commands\GenerateCommand;
+use Hemilrajput\TypeGen\Commands\GenerateRoutesCommand;
+use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use Illuminate\Support\ServiceProvider;
 
 class TypeGenServiceProvider extends ServiceProvider

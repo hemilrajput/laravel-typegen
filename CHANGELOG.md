@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-05-30
+
+### Breaking Changes
+- **PSR-4 Namespace Refactor**: The root namespace has been changed from `hemilrajput\TypeGen` to `Hemilrajput\TypeGen` to fully comply with PSR-4 standards and standard PHP conventions. You will need to update all imports (e.g., `use Hemilrajput\TypeGen\Attributes\TypeScript;`).
+
+---
+
 ## [2.0.0] - 2026-05-30
 
 ### Breaking Changes

@@ -1,8 +1,8 @@
 <?php
 
-namespace hemilrajput\TypeGen\Generators;
+namespace Hemilrajput\TypeGen\Generators;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 use ReflectionEnum;
 
 class EnumGenerator

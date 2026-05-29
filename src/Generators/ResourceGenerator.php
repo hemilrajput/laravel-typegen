@@ -1,8 +1,8 @@
 <?php
 
-namespace hemilrajput\TypeGen\Generators;
+namespace Hemilrajput\TypeGen\Generators;
 
-use hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use ReflectionClass;
 
 class ResourceGenerator

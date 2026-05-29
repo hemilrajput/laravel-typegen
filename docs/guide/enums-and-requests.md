@@ -9,7 +9,7 @@ Any PHP 8.1+ Enum marked with `#[TypeScript]` is generated as a TypeScript union
 ```php
 namespace App\Enums;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 enum UserRole: string
@@ -55,7 +55,7 @@ FormRequests marked with `#[TypeScript]` are compiled into typed request payload
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 class StorePostRequest extends FormRequest

@@ -1,8 +1,8 @@
 <?php
 
-namespace hemilrajput\TypeGen\Tests\Fixtures\Enums;
+namespace Hemilrajput\TypeGen\Tests\Fixtures\Enums;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 enum PostStatus: string

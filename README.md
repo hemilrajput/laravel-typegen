@@ -67,7 +67,7 @@ composer require hemilrajput/laravel-typegen
 
 ### 1. Tag your classes
 ```php
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 class User extends Model { ... }

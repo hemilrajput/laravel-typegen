@@ -7,7 +7,7 @@ If you are migrating from `spatie/laravel-typescript-transformer`, this guide wa
 | Feature | Spatie | Laravel TypeGen |
 |---|---|---|
 | Attribute | `#[TypeScript]` | `#[TypeScript]` |
-| Attribute Namespace | `Spatie\LaravelTypeScript\...` | `hemilrajput\TypeGen\Attributes\TypeScript` |
+| Attribute Namespace | `Spatie\LaravelTypeScript\...` | `Hemilrajput\TypeGen\Attributes\TypeScript` |
 | Overriding Names | `#[TypeScript('CustomName')]` | `#[TypeScript(name: 'CustomName')]` |
 | Relationship Auto-discovery | No | Yes (opt-in) |
 | FormRequest Request DTOs | Complex | Yes (out of the box) |
@@ -41,7 +41,7 @@ use Spatie\LaravelTypeScriptTransformer\Attributes\TypeScript;
 
 To:
 ```php
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 ```
 
 If you were customizing names:

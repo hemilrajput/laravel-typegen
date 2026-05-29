@@ -1,6 +1,6 @@
 <?php
 
-namespace hemilrajput\TypeGen\Relations;
+namespace Hemilrajput\TypeGen\Relations;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;

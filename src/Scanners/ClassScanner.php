@@ -1,8 +1,8 @@
 <?php
 
-namespace hemilrajput\TypeGen\Scanners;
+namespace Hemilrajput\TypeGen\Scanners;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 use ReflectionClass;
 use Symfony\Component\Finder\Finder;
 

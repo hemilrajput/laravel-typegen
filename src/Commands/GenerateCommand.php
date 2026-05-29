@@ -1,19 +1,19 @@
 <?php
 
-namespace hemilrajput\TypeGen\Commands;
+namespace Hemilrajput\TypeGen\Commands;
 
-use hemilrajput\TypeGen\Generators\EnumGenerator;
-use hemilrajput\TypeGen\Generators\FormRequestGenerator;
-use hemilrajput\TypeGen\Generators\ModelGenerator;
-use hemilrajput\TypeGen\Generators\ResourceGenerator;
-use hemilrajput\TypeGen\Mappers\CastTypeMapper;
-use hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
-use hemilrajput\TypeGen\Mappers\RuleTree;
-use hemilrajput\TypeGen\Relations\RelationDetector;
-use hemilrajput\TypeGen\Relations\RelationResolver;
-use hemilrajput\TypeGen\Scanners\ClassScanner;
-use hemilrajput\TypeGen\Writers\TypeScriptSplitWriter;
-use hemilrajput\TypeGen\Writers\TypeScriptWriter;
+use Hemilrajput\TypeGen\Generators\EnumGenerator;
+use Hemilrajput\TypeGen\Generators\FormRequestGenerator;
+use Hemilrajput\TypeGen\Generators\ModelGenerator;
+use Hemilrajput\TypeGen\Generators\ResourceGenerator;
+use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
+use Hemilrajput\TypeGen\Mappers\RuleTree;
+use Hemilrajput\TypeGen\Relations\RelationDetector;
+use Hemilrajput\TypeGen\Relations\RelationResolver;
+use Hemilrajput\TypeGen\Scanners\ClassScanner;
+use Hemilrajput\TypeGen\Writers\TypeScriptSplitWriter;
+use Hemilrajput\TypeGen\Writers\TypeScriptWriter;
 use Illuminate\Console\Command;
 use Symfony\Component\Process\Process;
 

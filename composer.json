@@ -4,7 +4,7 @@
     "keywords": ["laravel", "typescript", "inertia", "eloquent", "types", "codegen"],
     "license": "MIT",
     "authors": [
-        { "name": "Hemil Rajput", "email": "rajputhemil04@gmail.com" }
+        { "name": "Hemil Rajput", "email": "rajputhemil04.woop@gmail.com" }
     ],
     "require": {
         "php": "^8.3",
@@ -22,29 +22,29 @@
     },
     "autoload": {
         "psr-4": {
-            "hemilrajput\\TypeGen\\": "src/"
+            "Hemilrajput\\TypeGen\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "hemilrajput\\TypeGen\\Tests\\": "tests/"
+            "Hemilrajput\\TypeGen\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "hemilrajput\\TypeGen\\TypeGenServiceProvider"
+                "Hemilrajput\\TypeGen\\TypeGenServiceProvider"
             ]
         }
     },
     "scripts": {
         "test": "vendor/bin/pest"
     },
-    "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
             "pestphp/pest-plugin": true
-        }
+        },
+        "platform-check": false
     }
 }

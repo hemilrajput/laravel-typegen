@@ -1,8 +1,8 @@
 <?php
 
-namespace hemilrajput\TypeGen\Commands;
+namespace Hemilrajput\TypeGen\Commands;
 
-use hemilrajput\TypeGen\Generators\RoutesGenerator;
+use Hemilrajput\TypeGen\Generators\RoutesGenerator;
 use Illuminate\Console\Command;
 
 class GenerateRoutesCommand extends Command

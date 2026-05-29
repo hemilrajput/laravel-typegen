@@ -4,13 +4,16 @@ Laravel TypeGen is a zero-dependency PHP package designed to turn your Eloquent 
 
 ## Requirements
 
-* PHP 8.2 or higher
-* Laravel 11.0, 12.0, or 13.0
+- **PHP**: ^8.3
+- **Laravel**: ^11.0, ^12.0, or ^13.0
 
-## Installation
+### Node.js (Optional but recommended)
+Used if you compile your frontend with Vite or Mix.
+- Node.js >= 16
 
-You can install the package via Composer:
+## 1. Install the Package
 
+Install via composer:
 ```bash
 composer require hemilrajput/laravel-typegen
 ```
@@ -33,7 +36,7 @@ To generate types for a model, simply annotate your class with the `#[TypeScript
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 
 #[TypeScript]
 class User extends Model

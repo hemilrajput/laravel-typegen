@@ -1,6 +1,6 @@
 <?php
 
-namespace hemilrajput\TypeGen\Generators;
+namespace Hemilrajput\TypeGen\Generators;
 
 use Illuminate\Support\Facades\Route as RouteFacade;
 

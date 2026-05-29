@@ -1,6 +1,6 @@
 <?php
 
-use hemilrajput\TypeGen\Tests\TestCase;
+use Hemilrajput\TypeGen\Tests\TestCase;
 use Illuminate\Support\Facades\Route;
 
 uses(TestCase::class);

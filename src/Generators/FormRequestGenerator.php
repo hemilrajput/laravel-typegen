@@ -1,10 +1,10 @@
 <?php
 
-namespace hemilrajput\TypeGen\Generators;
+namespace Hemilrajput\TypeGen\Generators;
 
-use hemilrajput\TypeGen\Attributes\TypeScript;
-use hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
-use hemilrajput\TypeGen\Mappers\RuleTree;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
+use Hemilrajput\TypeGen\Mappers\RuleTree;
 use Illuminate\Foundation\Http\FormRequest;
 use ReflectionClass;
 

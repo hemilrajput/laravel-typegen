@@ -1,6 +1,6 @@
 <?php
 
-namespace hemilrajput\TypeGen\Mappers;
+namespace Hemilrajput\TypeGen\Mappers;
 
 class CastTypeMapper
 {

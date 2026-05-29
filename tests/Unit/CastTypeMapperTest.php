@@ -1,6 +1,6 @@
 <?php
 
-use hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 
 it('maps primitive casts correctly', function () {
     $mapper = new CastTypeMapper;
