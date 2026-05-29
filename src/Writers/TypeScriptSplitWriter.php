@@ -6,9 +6,6 @@ class TypeScriptSplitWriter
 {
     public function __construct(protected array $config) {}
 
-    /**
-     * @param  array  $blocks
-     */
     public function write(array $blocks): string
     {
         $path = $this->config['output']['path'];
