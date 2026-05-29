@@ -134,7 +134,10 @@ class GenerateCommand extends Command
                 if ($isVerbose) {
                     $this->line("  ✓ enum {$enum}");
                 }
-                $blocks[] = $enumGenerator->generate($enum);
+                $blocks[] = [
+                    'category' => 'Enums',
+                    'content' => $enumGenerator->generate($enum),
+                ];
                 if ($bar) {
                     $bar->advance();
                 }
@@ -152,7 +155,10 @@ class GenerateCommand extends Command
                 if ($isVerbose) {
                     $this->line("  ✓ request {$request}");
                 }
-                $blocks[] = $requestGenerator->generate($request);
+                $blocks[] = [
+                    'category' => 'Requests',
+                    'content' => $requestGenerator->generate($request),
+                ];
                 if ($bar) {
                     $bar->advance();
                 }
@@ -166,7 +172,10 @@ class GenerateCommand extends Command
                 if ($isVerbose) {
                     $this->line("  ✓ resource {$resource}");
                 }
-                $blocks[] = $resourceGenerator->generate($resource);
+                $blocks[] = [
+                    'category' => 'Resources',
+                    'content' => $resourceGenerator->generate($resource),
+                ];
                 if ($bar) {
                     $bar->advance();
                 }
@@ -191,7 +200,10 @@ class GenerateCommand extends Command
                 }
 
                 $result = $modelGenerator->generate($modelClass);
-                $modelBlocks[] = $result['block'];
+                $modelBlocks[] = [
+                    'category' => 'Models',
+                    'content' => $result['block'],
+                ];
 
                 // Add any newly-discovered related models to the queue
                 foreach ($result['discovered'] as $discoveredClass) {
@@ -221,7 +233,10 @@ class GenerateCommand extends Command
         $allBlocks = [...$blocks, ...$modelBlocks];
 
         if (! empty($modelBlocks) && ($config['relations']['wrap_with_relation'] ?? true)) {
-            $allBlocks = ['export type Relation<T> = T;', ...$allBlocks];
+            array_unshift($allBlocks, [
+                'category' => 'Support',
+                'content' => 'export type Relation<T> = T;',
+            ]);
         }
 
         if (empty($allBlocks)) {
@@ -231,7 +246,7 @@ class GenerateCommand extends Command
         }
 
         if ($this->option('dry-run')) {
-            $this->line("\n".implode("\n\n", $allBlocks));
+            $this->line("\n".implode("\n\n", array_column($allBlocks, 'content')));
 
             return self::SUCCESS;
         }

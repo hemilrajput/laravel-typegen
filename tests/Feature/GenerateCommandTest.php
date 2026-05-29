@@ -134,21 +134,31 @@ it('splits output into separate files with imports when split config is enabled'
     $dir = sys_get_temp_dir().'/split_out';
 
     expect(is_dir($dir))->toBeTrue()
-        ->and(file_exists("{$dir}/User.ts"))->toBeTrue()
-        ->and(file_exists("{$dir}/PostStatus.ts"))->toBeTrue()
-        ->and(file_exists("{$dir}/StorePostRequest.ts"))->toBeTrue()
+        ->and(file_exists("{$dir}/Models/User.ts"))->toBeTrue()
+        ->and(file_exists("{$dir}/Enums/PostStatus.ts"))->toBeTrue()
+        ->and(file_exists("{$dir}/Requests/StorePostRequest.ts"))->toBeTrue()
         ->and(file_exists("{$dir}/index.ts"))->toBeTrue();
 
-    // Verify imports inside User.ts
-    $userContents = file_get_contents("{$dir}/User.ts");
+    // Verify imports inside User.ts (across directories and within)
+    $userContents = file_get_contents("{$dir}/Models/User.ts");
     expect($userContents)->toContain("import { Post } from './Post';")
-        ->and($userContents)->toContain("import { PostStatus } from './PostStatus';");
+        ->and($userContents)->toContain("import { PostStatus } from '../Enums/PostStatus';");
 
     // Clean up
-    foreach (glob("{$dir}/*.ts") as $file) {
-        @unlink($file);
+    if (is_dir($dir)) {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) {
+                @rmdir($file->getRealPath());
+            } else {
+                @unlink($file->getRealPath());
+            }
+        }
+        @rmdir($dir);
     }
-    @rmdir($dir);
 });
 
 it('respects ignore attributes and parameters', function () {
