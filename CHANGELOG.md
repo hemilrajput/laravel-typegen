@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-06-14
+
+### Changed
+- **Strict Schema Enforcement**: The generator now throws a `RuntimeException` instead of silently falling back to `$fillable` if a model's database table does not exist. This prevents the silent emission of wrongly typed interfaces.
+- **Cast Nullability**: The generator correctly preserves database schema nullability when processing casts.
+- **Appended Attributes**: The generator dynamically parses `$appends` and emits appended properties.
+
+### Fixed
+- Fixed an issue where the CI testing matrix would not test compilation correctly due to the npm `tsc` package.
+
+---
+
 ## [2.0.2] - 2026-06-14
 
 ### Changed
