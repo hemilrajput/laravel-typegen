@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-14
+
+### Changed
+- Maintained wide range support for `php: ^8.2|^8.3|^8.4` and `illuminate/*: ^11.0|^12.0|^13.0`.
+- Expanded CI testing matrix to ensure all permutations of PHP 8.2-8.4 and Laravel 11-13 pass.
+
+---
+
 ## [2.0.0] - 2026-05-30
 
 ### Breaking Changes
