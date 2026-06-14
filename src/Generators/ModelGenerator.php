@@ -72,74 +72,50 @@ class ModelGenerator
     protected function collectFields(Model $instance, array $ignore = []): array
     {
         $fields = [];
+        $table = $instance->getTable();
 
-        // primary key
-        $keyName = $instance->getKeyName();
-        if (! in_array($keyName, $ignore, true)) {
-            $fields[$keyName] = $instance->getKeyType() === 'int' ? 'number' : 'string';
+        if (! Schema::hasTable($table)) {
+            throw new \RuntimeException("Table [{$table}] does not exist. Please migrate your database before generating types.");
         }
 
-        // casts
-        foreach ($instance->getCasts() as $attr => $cast) {
+        $dbColumns = Schema::getColumns($table);
+        $casts = $instance->getCasts();
+        $hidden = $instance->getHidden();
+        $includeHidden = $this->config['include_hidden'] ?? false;
+
+        // 1. Process Database Columns
+        foreach ($dbColumns as $column) {
+            $attr = $column['name'];
+
             if (in_array($attr, $ignore, true)) {
                 continue;
             }
-            if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
+            if (! $includeHidden && in_array($attr, $hidden, true)) {
                 continue;
             }
-            $fields[$attr] = $this->mapper->toTypeScript($cast);
+
+            if (isset($casts[$attr])) {
+                $baseType = $this->mapper->toTypeScript($casts[$attr]);
+            } else {
+                $baseType = $this->dbTypeToTypeScript($column['type_name']);
+            }
+
+            $fields[$attr] = ($column['nullable'] ?? false) ? "{$baseType} | null" : $baseType;
         }
 
-        // Database columns inspection (fallback if schema table exists)
-        $table = $instance->getTable();
-        $dbColumns = [];
-        try {
-            if (Schema::hasTable($table)) {
-                $dbColumns = Schema::getColumns($table);
+        // 2. Process Appended Attributes
+        foreach ($instance->getAppends() as $appended) {
+            if (in_array($appended, $ignore, true) || isset($fields[$appended])) {
+                continue;
             }
-        } catch (\Throwable $e) {
-            // Gracefully ignore DB exceptions if DB is not configured or table doesn't exist yet
-        }
-
-        if (! empty($dbColumns)) {
-            foreach ($dbColumns as $column) {
-                $attr = $column['name'];
-                if (isset($fields[$attr]) || in_array($attr, $ignore, true)) {
-                    continue;
-                }
-                if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
-                    continue;
-                }
-
-                $type = $this->dbTypeToTypeScript($column['type_name']);
-                if ($column['nullable'] ?? false) {
-                    $type = "{$type} | null";
-                }
-                $fields[$attr] = $type;
+            if (! $includeHidden && in_array($appended, $hidden, true)) {
+                continue;
             }
-        } else {
-            // fillable fallback
-            foreach ($instance->getFillable() as $attr) {
-                if (isset($fields[$attr]) || in_array($attr, $ignore, true)) {
-                    continue;
-                }
-                if (! $this->config['include_hidden'] && in_array($attr, $instance->getHidden(), true)) {
-                    continue;
-                }
-                $fields[$attr] = 'string';
-            }
-        }
 
-        // timestamps
-        if ($this->config['include_timestamps'] && $instance->usesTimestamps()) {
-            $createdAt = $instance->getCreatedAtColumn() ?? 'created_at';
-            $updatedAt = $instance->getUpdatedAtColumn() ?? 'updated_at';
-
-            if (! in_array($createdAt, $ignore, true) && ! isset($fields[$createdAt])) {
-                $fields[$createdAt] = 'string';
-            }
-            if (! in_array($updatedAt, $ignore, true) && ! isset($fields[$updatedAt])) {
-                $fields[$updatedAt] = 'string';
+            if (isset($casts[$appended])) {
+                $fields[$appended] = $this->mapper->toTypeScript($casts[$appended]);
+            } else {
+                $fields[$appended] = 'any';
             }
         }
 

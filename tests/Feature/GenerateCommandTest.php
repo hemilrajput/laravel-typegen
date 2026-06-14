@@ -178,7 +178,7 @@ it('respects ignore attributes and parameters', function () {
 
     expect($ignoredUserBlock)->toContain('export interface IgnoredUser')
         ->and($ignoredUserBlock)->toContain('name: string;')
-        ->and($ignoredUserBlock)->toContain('updated_at: string;')
+        ->and($ignoredUserBlock)->toContain('updated_at: string | null;')
         ->and($ignoredUserBlock)->not->toContain('email:')
         ->and($ignoredUserBlock)->not->toContain('posts?')
         ->and($ignoredUserBlock)->not->toContain('profile?')
@@ -193,7 +193,8 @@ it('infers types and nullability from database schema when table exists', functi
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
     config()->set('typegen.output.path', $outputPath);
 
-    // Create the users table in sqlite memory DB
+    // Drop the users table created in TestCase::setUp() to recreate it with specific columns for this test
+    Schema::dropIfExists('users');
     Schema::create('users', function ($table) {
         $table->id();
         $table->string('name');
