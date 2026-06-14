@@ -2,6 +2,7 @@
 
 use Hemilrajput\TypeGen\Tests\TestCase;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\Process\Process;
 
 uses(TestCase::class);
 
@@ -357,12 +358,12 @@ it('generates valid typescript that compiles', function () {
     $this->artisan('typescript:generate')->assertSuccessful();
 
     // Now run tsc --noEmit
-    $process = \Symfony\Component\Process\Process::fromShellCommandline("npx tsc --noEmit --strict {$outputPath}");
+    $process = Process::fromShellCommandline("npx tsc --noEmit --strict {$outputPath}");
     $process->run();
 
     expect($process->isSuccessful())->toBeTrue(
-        "TypeScript compilation failed:\n" . $process->getErrorOutput() . "\n" . $process->getOutput()
+        "TypeScript compilation failed:\n".$process->getErrorOutput()."\n".$process->getOutput()
     );
 
     @unlink($outputPath);
-})->skip(fn() => !trim(shell_exec('which npx')), 'npx is not installed');
+})->skip(fn () => ! trim(shell_exec('which npx')), 'npx is not installed');
