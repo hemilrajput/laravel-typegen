@@ -14,9 +14,9 @@ class ResourceGenerator
 
     public function generate(string $resourceClass): string
     {
-        $reflection = new ReflectionClass($resourceClass);
-        $name = $reflection->getShortName();
-        $fields = $this->collectFields($resourceClass, $reflection);
+        $reflectionClass = new ReflectionClass($resourceClass);
+        $name = $reflectionClass->getShortName();
+        $fields = $this->collectFields($resourceClass, $reflectionClass);
 
         $allLines = [];
         foreach ($fields as $field => $type) {
@@ -32,13 +32,13 @@ class ResourceGenerator
     }
 
     /** @return array<string,string> */
-    protected function collectFields(string $resourceClass, ReflectionClass $reflection): array
+    protected function collectFields(string $resourceClass, ReflectionClass $reflectionClass): array
     {
         $fields = [];
-        $docComment = $reflection->getDocComment();
+        $docComment = $reflectionClass->getDocComment();
 
         if ($docComment) {
-            preg_match_all('/@property(?:-read)?\s+([^\s]+)\s+\$([a-zA-Z0-9_]+)/', $docComment, $matches, PREG_SET_ORDER);
+            preg_match_all('/@property(?:-read)?\s+([^\s]+)\s+\$(\w+)/', $docComment, $matches, PREG_SET_ORDER);
             foreach ($matches as $match) {
                 $type = $match[1];
                 $name = $match[2];
@@ -47,8 +47,8 @@ class ResourceGenerator
         }
 
         // Fallback to matching model if no properties are defined via PHPDoc
-        if (empty($fields)) {
-            $baseName = $reflection->getShortName();
+        if ($fields === []) {
+            $baseName = $reflectionClass->getShortName();
             if (str_ends_with($baseName, 'Resource')) {
                 $modelName = substr($baseName, 0, -8);
                 $modelClass = null;
@@ -57,9 +57,9 @@ class ResourceGenerator
                     "App\\{$modelName}",
                     "hemilrajput\\TypeGen\\Tests\\Fixtures\\Models\\{$modelName}", // for test environment
                 ];
-                foreach ($possibleClasses as $possible) {
-                    if (class_exists($possible)) {
-                        $modelClass = $possible;
+                foreach ($possibleClasses as $possibleClass) {
+                    if (class_exists($possibleClass)) {
+                        $modelClass = $possibleClass;
                         break;
                     }
                 }
@@ -124,7 +124,7 @@ class ResourceGenerator
 
         $union = implode(' | ', array_unique($mappedTypes));
         if ($isNullable) {
-            $union = "{$union} | null";
+            return "{$union} | null";
         }
 
         return $union;

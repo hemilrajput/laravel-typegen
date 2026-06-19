@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hemilrajput\TypeGen\Attributes;
 
 use Attribute;

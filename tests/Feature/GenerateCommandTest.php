@@ -6,7 +6,7 @@ use Symfony\Component\Process\Process;
 
 uses(TestCase::class);
 
-it('generates a typescript file from a model with #[TypeScript]', function () {
+it('generates a typescript file from a model with #[TypeScript]', function (): void {
     $outputPath = sys_get_temp_dir().'/test.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -22,7 +22,7 @@ it('generates a typescript file from a model with #[TypeScript]', function () {
     @unlink($outputPath);
 });
 
-it('respects the --dry-run flag', function () {
+it('respects the --dry-run flag', function (): void {
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
 
     $this->artisan('typescript:generate', ['--dry-run' => true])
@@ -30,7 +30,7 @@ it('respects the --dry-run flag', function () {
         ->expectsOutputToContain('export interface User');
 });
 
-it('warns when no models are found', function () {
+it('warns when no models are found', function (): void {
     config()->set('typegen.paths.models', __DIR__.'/NonExistent');
 
     $this->artisan('typescript:generate')
@@ -38,7 +38,7 @@ it('warns when no models are found', function () {
         ->expectsOutputToContain('No classes found');
 });
 
-it('generates types for an enum and a request together', function () {
+it('generates types for an enum and a request together', function (): void {
     config()->set('typegen.paths.enums', __DIR__.'/../Fixtures/Enums');
     config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -61,7 +61,7 @@ it('generates types for an enum and a request together', function () {
     @unlink($outputPath);
 });
 
-it('handles messy form requests without crashing', function () {
+it('handles messy form requests without crashing', function (): void {
     config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
 
     $outputPath = sys_get_temp_dir().'/messy.ts';
@@ -87,7 +87,7 @@ it('handles messy form requests without crashing', function () {
     @unlink($outputPath);
 });
 
-it('auto-discovers related models and emits them together', function () {
+it('auto-discovers related models and emits them together', function (): void {
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
     $outputPath = sys_get_temp_dir().'/v03.ts';
     config()->set('typegen.output.path', $outputPath);
@@ -106,7 +106,7 @@ it('auto-discovers related models and emits them together', function () {
     @unlink($outputPath);
 });
 
-it('handles cycles without infinite loop', function () {
+it('handles cycles without infinite loop', function (): void {
     // User -> Post -> User
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/CyclicModels');
     $outputPath = sys_get_temp_dir().'/cycle.ts';
@@ -121,7 +121,7 @@ it('handles cycles without infinite loop', function () {
     @unlink($outputPath);
 });
 
-it('splits output into separate files with imports when split config is enabled', function () {
+it('splits output into separate files with imports when split config is enabled', function (): void {
     config()->set('typegen.paths.enums', __DIR__.'/../Fixtures/Enums');
     config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -162,7 +162,7 @@ it('splits output into separate files with imports when split config is enabled'
     }
 });
 
-it('respects ignore attributes and parameters', function () {
+it('respects ignore attributes and parameters', function (): void {
     $outputPath = sys_get_temp_dir().'/ignore.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -188,7 +188,7 @@ it('respects ignore attributes and parameters', function () {
     @unlink($outputPath);
 });
 
-it('infers types and nullability from database schema when table exists', function () {
+it('infers types and nullability from database schema when table exists', function (): void {
     $outputPath = sys_get_temp_dir().'/db_fallback.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -196,7 +196,7 @@ it('infers types and nullability from database schema when table exists', functi
 
     // Drop the users table created in TestCase::setUp() to recreate it with specific columns for this test
     Schema::dropIfExists('users');
-    Schema::create('users', function ($table) {
+    Schema::create('users', function ($table): void {
         $table->id();
         $table->string('name');
         $table->string('email')->nullable();
@@ -223,7 +223,7 @@ it('infers types and nullability from database schema when table exists', functi
     Schema::drop('users');
 });
 
-it('wraps relationships in Relation helper by default', function () {
+it('wraps relationships in Relation helper by default', function (): void {
     $outputPath = sys_get_temp_dir().'/relations_wrap.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -240,7 +240,7 @@ it('wraps relationships in Relation helper by default', function () {
     @unlink($outputPath);
 });
 
-it('respects relations wrap configuration', function () {
+it('respects relations wrap configuration', function (): void {
     $outputPath = sys_get_temp_dir().'/relations_nowrap.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -258,7 +258,7 @@ it('respects relations wrap configuration', function () {
     @unlink($outputPath);
 });
 
-it('runs pre and post generation hooks and replaces the placeholder', function () {
+it('runs pre and post generation hooks and replaces the placeholder', function (): void {
     $outputPath = sys_get_temp_dir().'/hooks_test.ts';
     $preFile = sys_get_temp_dir().'/pre_hook_ran.txt';
     $postFile = sys_get_temp_dir().'/post_hook_ran.txt';
@@ -285,7 +285,7 @@ it('runs pre and post generation hooks and replaces the placeholder', function (
     @unlink($postFile);
 });
 
-it('generates TypeScript types for API Resources from PHPDoc and Model fallback', function () {
+it('generates TypeScript types for API Resources from PHPDoc and Model fallback', function (): void {
     $outputPath = sys_get_temp_dir().'/resources_test.ts';
 
     config()->set('typegen.paths.resources', __DIR__.'/../Fixtures/Resources');
@@ -314,7 +314,7 @@ it('generates TypeScript types for API Resources from PHPDoc and Model fallback'
     @unlink($outputPath);
 });
 
-it('generates valid typescript that compiles', function () {
+it('generates valid typescript that compiles', function (): void {
     $outputPath = sys_get_temp_dir().'/compile_test.ts';
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
@@ -324,7 +324,7 @@ it('generates valid typescript that compiles', function () {
 
     // Drop and recreate tables so DB inference works and we don't throw exception
     Schema::dropIfExists('users');
-    Schema::create('users', function ($table) {
+    Schema::create('users', function ($table): void {
         $table->id();
         $table->string('name');
         $table->string('email')->nullable();
@@ -339,7 +339,7 @@ it('generates valid typescript that compiles', function () {
     });
 
     Schema::dropIfExists('posts');
-    Schema::create('posts', function ($table) {
+    Schema::create('posts', function ($table): void {
         $table->id();
         $table->foreignId('user_id');
         $table->string('title');
@@ -348,7 +348,7 @@ it('generates valid typescript that compiles', function () {
     });
 
     Schema::dropIfExists('profiles');
-    Schema::create('profiles', function ($table) {
+    Schema::create('profiles', function ($table): void {
         $table->id();
         $table->foreignId('user_id');
         $table->string('bio')->nullable();
@@ -366,4 +366,4 @@ it('generates valid typescript that compiles', function () {
     );
 
     @unlink($outputPath);
-})->skip(fn () => ! trim(shell_exec('which npx')), 'npx is not installed');
+})->skip(fn (): bool => ! trim(shell_exec('which npx')), 'npx is not installed');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hemilrajput\TypeGen\Relations;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,8 +45,8 @@ class RelationDetector
             return ['kind' => 'unknown', 'return_type' => null];
         }
 
-        $reflection = new ReflectionMethod($modelClass, $methodName);
-        $returnType = $reflection->getReturnType();
+        $reflectionMethod = new ReflectionMethod($modelClass, $methodName);
+        $returnType = $reflectionMethod->getReturnType();
 
         if (! $returnType instanceof \ReflectionNamedType) {
             return ['kind' => 'unknown', 'return_type' => null];

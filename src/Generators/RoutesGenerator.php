@@ -36,16 +36,16 @@ class RoutesGenerator
 
         // Render TypeScript RouteName
         $names = array_keys($routeMap);
-        if (empty($names)) {
+        if ($names === []) {
             return "export type RouteName = never;\nexport type RouteParams<T extends RouteName> = never;\n";
         }
 
-        $routeNameUnion = implode("\n  | ", array_map(fn ($n) => "'{$n}'", $names));
+        $routeNameUnion = implode("\n  | ", array_map(fn (string $n): string => "'{$n}'", $names));
 
         // Render RouteParams
         $paramLines = [];
         foreach ($routeMap as $name => $params) {
-            if (empty($params)) {
+            if ($params === []) {
                 $paramLines[] = "  T extends '{$name}' ? {} :";
             } else {
                 $fields = [];

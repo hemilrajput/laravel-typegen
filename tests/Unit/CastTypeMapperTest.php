@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 
-it('maps primitive casts correctly', function () {
+it('maps primitive casts correctly', function (): void {
     $mapper = new CastTypeMapper;
 
     expect($mapper->toTypeScript('int'))->toBe('number')
@@ -13,7 +15,7 @@ it('maps primitive casts correctly', function () {
         ->and($mapper->toTypeScript('decimal:2'))->toBe('number');
 });
 
-it('maps custom casts configured via overrides', function () {
+it('maps custom casts configured via overrides', function (): void {
     $mapper = new CastTypeMapper([
         'App\Casts\MoneyCast' => 'number',
         '\App\Casts\CustomObjectCast' => 'MyCustomObject',
@@ -25,12 +27,12 @@ it('maps custom casts configured via overrides', function () {
         ->and($mapper->toTypeScript('\App\Casts\CustomObjectCast'))->toBe('MyCustomObject');
 });
 
-it('falls back to unknown for unconfigured custom classes', function () {
+it('falls back to unknown for unconfigured custom classes', function (): void {
     $mapper = new CastTypeMapper;
     expect($mapper->toTypeScript('NonExistentCustomCast'))->toBe('unknown');
 });
 
-it('supports programmatic custom cast registration', function () {
+it('supports programmatic custom cast registration', function (): void {
     $mapper = new CastTypeMapper;
     $mapper->register('App\Casts\UUIDCast', 'string');
 

@@ -11,11 +11,11 @@ class EnumGenerator
 
     public function generate(string $enumClass): string
     {
-        $reflection = new ReflectionEnum($enumClass);
-        $name = $this->resolveName($reflection);
-        $values = $this->collectValues($reflection);
+        $reflectionEnum = new ReflectionEnum($enumClass);
+        $name = $this->resolveName($reflectionEnum);
+        $values = $this->collectValues($reflectionEnum);
 
-        if (empty($values)) {
+        if ($values === []) {
             return "// SKIPPED: {$name} has no cases";
         }
 
@@ -24,29 +24,29 @@ class EnumGenerator
         return "export type {$name} = {$union};";
     }
 
-    protected function resolveName(ReflectionEnum $reflection): string
+    protected function resolveName(ReflectionEnum $reflectionEnum): string
     {
-        $attr = $reflection->getAttributes(TypeScript::class)[0] ?? null;
+        $attr = $reflectionEnum->getAttributes(TypeScript::class)[0] ?? null;
         $override = $attr?->newInstance()->name;
 
-        return $override ?? $reflection->getShortName();
+        return $override ?? $reflectionEnum->getShortName();
     }
 
     /** @return array<string> */
-    protected function collectValues(ReflectionEnum $reflection): array
+    protected function collectValues(ReflectionEnum $reflectionEnum): array
     {
         $values = [];
 
-        foreach ($reflection->getCases() as $case) {
-            if ($case instanceof \ReflectionEnumBackedCase) {
-                $backingType = $reflection->getBackingType()?->getName();
-                $value = $case->getBackingValue();
+        foreach ($reflectionEnum->getCases() as $reflectionEnumUnitCase) {
+            if ($reflectionEnumUnitCase instanceof \ReflectionEnumBackedCase) {
+                $backingType = $reflectionEnum->getBackingType()?->getName();
+                $value = $reflectionEnumUnitCase->getBackingValue();
                 $values[] = $backingType === 'string'
                     ? "'".str_replace("'", "\\'", (string) $value)."'"
                     : (string) $value;
             } else {
                 // pure enum — emit case names as string literals
-                $values[] = "'".$case->getName()."'";
+                $values[] = "'".$reflectionEnumUnitCase->getName()."'";
             }
         }
 

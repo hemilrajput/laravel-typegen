@@ -2,7 +2,7 @@
 
 use Hemilrajput\TypeGen\Mappers\RuleTree;
 
-it('builds a tree from dot notation', function () {
+it('builds a tree from dot notation', function (): void {
     $tree = (new RuleTree)->build([
         'title' => ['required', 'string'],
         'author.name' => ['required', 'string'],
@@ -16,7 +16,7 @@ it('builds a tree from dot notation', function () {
     expect($tree['tags']['__item_rules'])->toBe(['string']);
 });
 
-it('handles nested arrays of objects', function () {
+it('handles nested arrays of objects', function (): void {
     $tree = (new RuleTree)->build([
         'posts' => ['required', 'array'],
         'posts.*.title' => ['required', 'string'],

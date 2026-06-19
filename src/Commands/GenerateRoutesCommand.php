@@ -3,20 +3,20 @@
 namespace Hemilrajput\TypeGen\Commands;
 
 use Hemilrajput\TypeGen\Generators\RoutesGenerator;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
+#[Description('Generate TypeScript types for Laravel routes.')]
+#[Signature('typescript:routes
+                            {--dry-run : Print output instead of writing}')]
 class GenerateRoutesCommand extends Command
 {
-    protected $signature = 'typescript:routes
-                            {--dry-run : Print output instead of writing}';
-
-    protected $description = 'Generate TypeScript types for Laravel routes.';
-
     public function handle(): int
     {
         $config = config('typegen');
-        $generator = new RoutesGenerator($config);
-        $output = $generator->generate();
+        $routesGenerator = new RoutesGenerator($config);
+        $output = $routesGenerator->generate();
 
         if ($this->option('dry-run')) {
             $this->line($output);
@@ -26,7 +26,7 @@ class GenerateRoutesCommand extends Command
 
         $path = $config['output']['routes_path'] ?? resource_path('js/types/routes.ts');
 
-        @mkdir(dirname($path), 0755, recursive: true);
+        @mkdir(dirname((string) $path), 0755, recursive: true);
         file_put_contents($path, $output);
 
         $this->info("Route types successfully written to: {$path}");

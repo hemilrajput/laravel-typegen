@@ -5,11 +5,11 @@ use Illuminate\Support\Facades\Route;
 
 uses(TestCase::class);
 
-it('generates route types for named routes', function () {
-    Route::get('/users', fn () => 'index')->name('users.index');
-    Route::get('/users/{user}', fn () => 'show')->name('users.show');
-    Route::get('/posts/{post}/{comment?}', fn () => 'show')->name('posts.comments.show');
-    Route::get('/unnamed', fn () => 'unnamed'); // should be ignored
+it('generates route types for named routes', function (): void {
+    Route::get('/users', fn (): string => 'index')->name('users.index');
+    Route::get('/users/{user}', fn (): string => 'show')->name('users.show');
+    Route::get('/posts/{post}/{comment?}', fn (): string => 'show')->name('posts.comments.show');
+    Route::get('/unnamed', fn (): string => 'unnamed'); // should be ignored
 
     $outputPath = sys_get_temp_dir().'/routes.ts';
     config()->set('typegen.output.routes_path', $outputPath);
@@ -31,8 +31,8 @@ it('generates route types for named routes', function () {
     @unlink($outputPath);
 });
 
-it('respects the --dry-run flag for routes', function () {
-    Route::get('/users', fn () => 'index')->name('users.index');
+it('respects the --dry-run flag for routes', function (): void {
+    Route::get('/users', fn (): string => 'index')->name('users.index');
 
     $outputPath = sys_get_temp_dir().'/routes_dry.ts';
     config()->set('typegen.output.routes_path', $outputPath);

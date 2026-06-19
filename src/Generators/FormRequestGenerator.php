@@ -18,8 +18,8 @@ class FormRequestGenerator
 
     public function generate(string $requestClass): string
     {
-        $reflection = new ReflectionClass($requestClass);
-        $name = $this->resolveName($reflection);
+        $reflectionClass = new ReflectionClass($requestClass);
+        $name = $this->resolveName($reflectionClass);
 
         try {
             $rules = $this->extractRules($requestClass);
@@ -27,7 +27,7 @@ class FormRequestGenerator
             return "// SKIPPED: {$name} — rules() could not be invoked: {$e->getMessage()}";
         }
 
-        if (empty($rules)) {
+        if ($rules === []) {
             return "export interface {$name} {}";
         }
 
@@ -37,12 +37,12 @@ class FormRequestGenerator
         return "export interface {$name} {\n{$body}\n}";
     }
 
-    protected function resolveName(ReflectionClass $reflection): string
+    protected function resolveName(ReflectionClass $reflectionClass): string
     {
-        $attr = $reflection->getAttributes(TypeScript::class)[0] ?? null;
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
         $override = $attr?->newInstance()->name;
 
-        return $override ?? $reflection->getShortName();
+        return $override ?? $reflectionClass->getShortName();
     }
 
     protected function extractRules(string $requestClass): array
@@ -97,7 +97,7 @@ class FormRequestGenerator
 
             // Nested object (author.name, author.age)
             $rulesAtThisLevel = $node['__rules'] ?? null;
-            $children = array_filter($node, fn ($k) => ! str_starts_with($k, '__'), ARRAY_FILTER_USE_KEY);
+            $children = array_filter($node, fn ($k): bool => ! str_starts_with((string) $k, '__'), ARRAY_FILTER_USE_KEY);
             $inner = $this->renderTree($children, $indent + 2);
 
             $optional = '';

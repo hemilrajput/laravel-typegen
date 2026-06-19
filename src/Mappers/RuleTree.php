@@ -24,7 +24,7 @@ class RuleTree
     {
         $head = array_shift($parts);
 
-        if (empty($parts)) {
+        if ($parts === []) {
             // Leaf
             $tree[$head]['__rules'] = $rule;
 
@@ -37,7 +37,7 @@ class RuleTree
 
         if ($parts[0] === '*') {
             array_shift($parts);
-            if (empty($parts)) {
+            if ($parts === []) {
                 // tags.* → item rules for the array
                 $tree[$head]['__item_rules'] = $rule;
 

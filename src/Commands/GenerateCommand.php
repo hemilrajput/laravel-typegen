@@ -14,18 +14,19 @@ use Hemilrajput\TypeGen\Relations\RelationResolver;
 use Hemilrajput\TypeGen\Scanners\ClassScanner;
 use Hemilrajput\TypeGen\Writers\TypeScriptSplitWriter;
 use Hemilrajput\TypeGen\Writers\TypeScriptWriter;
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Sleep;
 use Symfony\Component\Process\Process;
 
+#[Description('Generate TypeScript types from Laravel models, enums, and form requests.')]
+#[Signature('typescript:generate
+                            {--dry-run : Print output instead of writing}
+                            {--watch : Keep running and watch for file changes}')]
 class GenerateCommand extends Command
 {
-    protected $signature = 'typescript:generate
-                            {--dry-run : Print output instead of writing}
-                            {--watch : Keep running and watch for file changes}';
-
-    protected $description = 'Generate TypeScript types from Laravel models, enums, and form requests.';
-
-    public function handle(ClassScanner $scanner, CastTypeMapper $mapper): int
+    public function handle(ClassScanner $classScanner, CastTypeMapper $castTypeMapper): int
     {
         $config = config('typegen');
 
@@ -41,8 +42,8 @@ class GenerateCommand extends Command
             while (app()->runningInConsole()) {
                 $files = $this->getWatchFiles($config);
                 $changed = count($files) !== count($lastFiles)
-                    || ! empty(array_diff($files, $lastFiles))
-                    || ! empty(array_diff($lastFiles, $files));
+                    || array_diff($files, $lastFiles) !== []
+                    || array_diff($lastFiles, $files) !== [];
 
                 if (! $changed) {
                     foreach ($files as $file) {
@@ -56,7 +57,7 @@ class GenerateCommand extends Command
                 if ($changed) {
                     $this->info('['.date('H:i:s').'] File changes detected. Regenerating...');
                     try {
-                        $this->runGeneration($scanner, $config, $mapper, $writer);
+                        $this->runGeneration($classScanner, $config, $castTypeMapper, $writer);
                     } catch (\Throwable $e) {
                         $this->error('Generation failed: '.$e->getMessage());
                     }
@@ -64,16 +65,16 @@ class GenerateCommand extends Command
                     $lastFiles = $files;
                 }
 
-                sleep(1);
+                Sleep::sleep(1);
             }
 
             return self::SUCCESS;
         }
 
-        return $this->runGeneration($scanner, $config, $mapper, $writer);
+        return $this->runGeneration($classScanner, $config, $castTypeMapper, $writer);
     }
 
-    protected function runGeneration(ClassScanner $scanner, array $config, CastTypeMapper $mapper, $writer): int
+    protected function runGeneration(ClassScanner $classScanner, array $config, CastTypeMapper $castTypeMapper, $writer): int
     {
         $blocks = [];
         $isVerbose = $this->option('watch') || $this->option('dry-run');
@@ -98,25 +99,25 @@ class GenerateCommand extends Command
         // 1. Scan Enums
         $enumPath = $config['paths']['enums'] ?? null;
         if ($enumPath && is_dir($enumPath)) {
-            $enums = $scanner->scan([$enumPath], $config['scan_mode'] ?? 'attribute', filter: 'enum');
+            $enums = $classScanner->scan([$enumPath], $config['scan_mode'] ?? 'attribute', filter: 'enum');
         }
 
         // 2. Scan Form Requests
         $requestPath = $config['paths']['form_requests'] ?? null;
         if ($requestPath && is_dir($requestPath)) {
-            $requests = $scanner->scan([$requestPath], $config['scan_mode'] ?? 'attribute');
+            $requests = $classScanner->scan([$requestPath], $config['scan_mode'] ?? 'attribute');
         }
 
         // 2.5 Scan API Resources
         $resourcePath = $config['paths']['resources'] ?? null;
         if ($resourcePath && is_dir($resourcePath)) {
-            $resources = $scanner->scan([$resourcePath], $config['scan_mode'] ?? 'attribute');
+            $resources = $classScanner->scan([$resourcePath], $config['scan_mode'] ?? 'attribute');
         }
 
         // 3. Scan Models
         $modelPath = $config['paths']['models'] ?? app_path('Models');
         if (is_dir($modelPath)) {
-            $models = $scanner->scan([$modelPath], $config['scan_mode'] ?? 'attribute');
+            $models = $classScanner->scan([$modelPath], $config['scan_mode'] ?? 'attribute');
         }
 
         $totalCount = count($enums) + count($requests) + count($resources) + count($models);
@@ -128,7 +129,7 @@ class GenerateCommand extends Command
         }
 
         // Process Enums
-        if (! empty($enums)) {
+        if ($enums !== []) {
             $enumGenerator = new EnumGenerator($config);
             foreach ($enums as $enum) {
                 if ($isVerbose) {
@@ -145,8 +146,8 @@ class GenerateCommand extends Command
         }
 
         // Process Form Requests
-        if (! empty($requests)) {
-            $requestGenerator = new FormRequestGenerator(
+        if ($requests !== []) {
+            $formRequestGenerator = new FormRequestGenerator(
                 new RuleToTypeMapper,
                 new RuleTree,
                 $config,
@@ -157,7 +158,7 @@ class GenerateCommand extends Command
                 }
                 $blocks[] = [
                     'category' => 'Requests',
-                    'content' => $requestGenerator->generate($request),
+                    'content' => $formRequestGenerator->generate($request),
                 ];
                 if ($bar) {
                     $bar->advance();
@@ -166,8 +167,8 @@ class GenerateCommand extends Command
         }
 
         // Process API Resources
-        if (! empty($resources)) {
-            $resourceGenerator = new ResourceGenerator($mapper, $config);
+        if ($resources !== []) {
+            $resourceGenerator = new ResourceGenerator($castTypeMapper, $config);
             foreach ($resources as $resource) {
                 if ($isVerbose) {
                     $this->line("  ✓ resource {$resource}");
@@ -185,15 +186,15 @@ class GenerateCommand extends Command
         // Process Models
         $modelBlocks = [];
         if (is_dir($modelPath)) {
-            $detector = new RelationDetector;
-            $resolver = new RelationResolver($detector);
-            $modelGenerator = new ModelGenerator($mapper, $resolver, $config);
+            $relationDetector = new RelationDetector;
+            $relationResolver = new RelationResolver($relationDetector);
+            $modelGenerator = new ModelGenerator($castTypeMapper, $relationResolver, $config);
 
             // BFS queue with cycle detection
             $queue = array_values($models);
             $seen = array_flip($queue);
 
-            while (! empty($queue)) {
+            while ($queue !== []) {
                 $modelClass = array_shift($queue);
                 if ($isVerbose) {
                     $this->line("  ✓ model {$modelClass}");
@@ -232,14 +233,14 @@ class GenerateCommand extends Command
         // Assemble: enums -> form requests -> models
         $allBlocks = [...$blocks, ...$modelBlocks];
 
-        if (! empty($modelBlocks) && ($config['relations']['wrap_with_relation'] ?? true)) {
+        if ($modelBlocks !== [] && ($config['relations']['wrap_with_relation'] ?? true)) {
             array_unshift($allBlocks, [
                 'category' => 'Support',
                 'content' => 'export type Relation<T> = T;',
             ]);
         }
 
-        if (empty($allBlocks)) {
+        if ($allBlocks === []) {
             $this->warn('No classes found. Did you add the #[TypeScript] attribute?');
 
             return self::SUCCESS;

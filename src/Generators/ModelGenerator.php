@@ -22,14 +22,14 @@ class ModelGenerator
     {
         /** @var Model $instance */
         $instance = new $modelClass;
-        $reflection = new ReflectionClass($modelClass);
+        $reflectionClass = new ReflectionClass($modelClass);
 
-        $attr = $reflection->getAttributes(TypeScript::class)[0] ?? null;
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
         $ignore = $attr ? $attr->newInstance()->ignore : [];
 
-        $name = $this->resolveName($reflection);
+        $name = $this->resolveName($reflectionClass);
         $fields = $this->collectFields($instance, $ignore);
-        $relationResult = $this->collectRelations($reflection, $modelClass, $ignore);
+        $relationResult = $this->collectRelations($reflectionClass, $modelClass, $ignore);
 
         $allLines = [];
         foreach ($fields as $field => $type) {
@@ -53,15 +53,15 @@ class ModelGenerator
         ];
     }
 
-    protected function resolveName(ReflectionClass $reflection): string
+    protected function resolveName(ReflectionClass $reflectionClass): string
     {
-        $attr = $reflection->getAttributes(TypeScript::class)[0] ?? null;
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
         $override = $attr?->newInstance()->name;
         if ($override) {
             return $override;
         }
 
-        $base = $reflection->getShortName();
+        $base = $reflectionClass->getShortName();
 
         return ($this->config['naming']['model_prefix'] ?? '')
             .$base
@@ -69,23 +69,23 @@ class ModelGenerator
     }
 
     /** @return array<string,string> */
-    protected function collectFields(Model $instance, array $ignore = []): array
+    protected function collectFields(Model $model, array $ignore = []): array
     {
         $fields = [];
-        $table = $instance->getTable();
+        $table = $model->getTable();
 
         if (! Schema::hasTable($table)) {
             throw new \RuntimeException("Table [{$table}] does not exist. Please migrate your database before generating types.");
         }
 
         $dbColumns = Schema::getColumns($table);
-        $casts = $instance->getCasts();
-        $hidden = $instance->getHidden();
+        $casts = $model->getCasts();
+        $hidden = $model->getHidden();
         $includeHidden = $this->config['include_hidden'] ?? false;
 
         // 1. Process Database Columns
-        foreach ($dbColumns as $column) {
-            $attr = $column['name'];
+        foreach ($dbColumns as $dbColumn) {
+            $attr = $dbColumn['name'];
 
             if (in_array($attr, $ignore, true)) {
                 continue;
@@ -97,26 +97,25 @@ class ModelGenerator
             if (isset($casts[$attr])) {
                 $baseType = $this->mapper->toTypeScript($casts[$attr]);
             } else {
-                $baseType = $this->dbTypeToTypeScript($column['type_name']);
+                $baseType = $this->dbTypeToTypeScript($dbColumn['type_name']);
             }
 
-            $fields[$attr] = ($column['nullable'] ?? false) ? "{$baseType} | null" : $baseType;
+            $fields[$attr] = ($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType;
         }
 
         // 2. Process Appended Attributes
-        foreach ($instance->getAppends() as $appended) {
-            if (in_array($appended, $ignore, true) || isset($fields[$appended])) {
+        foreach ($model->getAppends() as $appended) {
+            if (in_array($appended, $ignore, true)) {
+                continue;
+            }
+            if (isset($fields[$appended])) {
                 continue;
             }
             if (! $includeHidden && in_array($appended, $hidden, true)) {
                 continue;
             }
 
-            if (isset($casts[$appended])) {
-                $fields[$appended] = $this->mapper->toTypeScript($casts[$appended]);
-            } else {
-                $fields[$appended] = 'any';
-            }
+            $fields[$appended] = isset($casts[$appended]) ? $this->mapper->toTypeScript($casts[$appended]) : 'any';
         }
 
         return $fields;
@@ -137,38 +136,38 @@ class ModelGenerator
     /**
      * @return array{fields: array<string,string>, discovered: array<string>}
      */
-    protected function collectRelations(ReflectionClass $reflection, string $modelClass, array $ignore = []): array
+    protected function collectRelations(ReflectionClass $reflectionClass, string $modelClass, array $ignore = []): array
     {
-        $attr = $reflection->getAttributes(TypeScript::class)[0] ?? null;
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
         $relations = $attr?->newInstance()->includeRelations ?? [];
 
         $fields = [];
         $discovered = [];
 
-        foreach ($relations as $methodName) {
-            if (in_array($methodName, $ignore, true)) {
+        foreach ($relations as $relation) {
+            if (in_array($relation, $ignore, true)) {
                 continue;
             }
 
-            if ($reflection->hasMethod($methodName)) {
-                $method = $reflection->getMethod($methodName);
+            if ($reflectionClass->hasMethod($relation)) {
+                $method = $reflectionClass->getMethod($relation);
                 if ($method->getAttributes(TypeScriptIgnore::class)) {
                     continue;
                 }
             }
 
-            $resolved = $this->resolver->resolve($modelClass, $methodName);
+            $resolved = $this->resolver->resolve($modelClass, $relation);
 
             if ($resolved['error']) {
                 // Log warning, emit unknown
                 error_log("typegen: {$resolved['error']}");
-                $fields[$methodName] = 'unknown';
+                $fields[$relation] = 'unknown';
 
                 continue;
             }
 
             $type = $this->relationToType($resolved, $discovered);
-            $fields[$methodName] = $type;
+            $fields[$relation] = $type;
         }
 
         return ['fields' => $fields, 'discovered' => $discovered];
@@ -184,7 +183,7 @@ class ModelGenerator
                     $discovered[] = $morphClass;
                 }
                 $union = implode(' | ', array_map(
-                    fn ($c) => class_basename($c),
+                    class_basename(...),
                     $resolved['morph_types']
                 ));
 

@@ -15,7 +15,7 @@ class TypeScriptWriter
         $contents = array_column($blocks, 'content');
         $fileContent = $banner."\n".implode("\n\n", $contents)."\n";
 
-        @mkdir(dirname($path), 0755, recursive: true);
+        @mkdir(dirname((string) $path), 0755, recursive: true);
         file_put_contents($path, $fileContent);
 
         return $path;

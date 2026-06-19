@@ -32,39 +32,39 @@ class TestCase extends Orchestra
     {
         parent::setUp();
 
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('role')->nullable();
-            $table->string('password');
-            $table->string('remember_token')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->boolean('is_admin')->default(false);
-            $table->json('preferences')->nullable();
-            $table->string('status')->nullable();
-            $table->timestamps();
+        Schema::create('users', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->string('name');
+            $blueprint->string('email')->unique();
+            $blueprint->string('role')->nullable();
+            $blueprint->string('password');
+            $blueprint->string('remember_token')->nullable();
+            $blueprint->timestamp('email_verified_at')->nullable();
+            $blueprint->boolean('is_admin')->default(false);
+            $blueprint->json('preferences')->nullable();
+            $blueprint->string('status')->nullable();
+            $blueprint->timestamps();
         });
 
-        Schema::create('posts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id');
-            $table->string('title');
-            $table->text('body');
-            $table->timestamps();
+        Schema::create('posts', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->foreignId('user_id');
+            $blueprint->string('title');
+            $blueprint->text('body');
+            $blueprint->timestamps();
         });
 
-        Schema::create('profiles', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id');
-            $table->string('bio')->nullable();
-            $table->timestamps();
+        Schema::create('profiles', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->foreignId('user_id');
+            $blueprint->string('bio')->nullable();
+            $blueprint->timestamps();
         });
 
-        Schema::create('ignored_users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->timestamps();
+        Schema::create('ignored_users', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->string('name');
+            $blueprint->timestamps();
         });
     }
 }

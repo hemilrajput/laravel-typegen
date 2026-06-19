@@ -18,7 +18,9 @@
         "pestphp/pest": "^3.0|^4.0",
         "pestphp/pest-plugin-laravel": "^3.0|^4.0",
         "laravel/pint": "^1.29",
-        "larastan/larastan": "^3.9|^4.0"
+        "larastan/larastan": "^3.9|^4.0",
+        "rector/rector": "^2.4",
+        "driftingly/rector-laravel": "^2.5"
     },
     "autoload": {
         "psr-4": {
@@ -41,7 +43,13 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest"
+        "test": "vendor/bin/pest",
+        "test:coverage": "vendor/bin/pest --coverage",
+        "lint": "vendor/bin/pint",
+        "lint:test": "vendor/bin/pint --test",
+        "stan": "vendor/bin/phpstan analyse --memory-limit=2G",
+        "rector": "vendor/bin/rector process --dry-run",
+        "rector:fix": "vendor/bin/rector process"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

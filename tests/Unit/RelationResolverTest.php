@@ -36,7 +36,7 @@ class BrokenModel extends Model
     }
 }
 
-it('resolves the related model class for a HasMany', function () {
+it('resolves the related model class for a HasMany', function (): void {
     $resolved = (new RelationResolver(new RelationDetector))
         ->resolve(TestUserForResolver::class, 'posts');
 
@@ -45,7 +45,7 @@ it('resolves the related model class for a HasMany', function () {
     expect($resolved['error'])->toBeNull();
 });
 
-it('returns morph types when morph map is registered', function () {
+it('returns morph types when morph map is registered', function (): void {
     Relation::enforceMorphMap([
         'post' => TestPostForResolver::class,
     ]);
@@ -57,7 +57,7 @@ it('returns morph types when morph map is registered', function () {
     expect($resolved['morph_types'])->toContain(TestPostForResolver::class);
 });
 
-it('returns an error without crashing when relation fails to instantiate', function () {
+it('returns an error without crashing when relation fails to instantiate', function (): void {
     $resolved = (new RelationResolver(new RelationDetector))
         ->resolve(BrokenModel::class, 'broken');
 
@@ -72,7 +72,7 @@ class TestModelWithoutReturnType extends Model
     }
 }
 
-it('resolves relations even when php return type is missing', function () {
+it('resolves relations even when php return type is missing', function (): void {
     $resolved = (new RelationResolver(new RelationDetector))
         ->resolve(TestModelWithoutReturnType::class, 'things');
 

@@ -12,7 +12,7 @@ class TypeScriptSplitWriter
         $banner = $this->config['output']['banner'] ?? '';
 
         // Determine output directory: strip .ts extension from the output path and make it a folder
-        $dir = dirname($path).'/'.pathinfo($path, PATHINFO_FILENAME);
+        $dir = dirname((string) $path).'/'.pathinfo((string) $path, PATHINFO_FILENAME);
 
         if (is_dir($dir)) {
             // Clean up old files/directories recursively
@@ -35,7 +35,7 @@ class TypeScriptSplitWriter
         $typeMap = [];
 
         foreach ($blocks as $block) {
-            if (preg_match('/export\s+(?:interface|type|enum)\s+(\w+)/', $block['content'], $match)) {
+            if (preg_match('/export\s+(?:interface|type|enum)\s+(\w+)/', (string) $block['content'], $match)) {
                 $typeName = $match[1];
                 $typeMap[$typeName] = [
                     'category' => $block['category'],
@@ -58,7 +58,7 @@ class TypeScriptSplitWriter
                 }
 
                 // Match exact word boundaries
-                if (preg_match('/\b'.preg_quote($otherType, '/').'\b/', $myContent)) {
+                if (preg_match('/\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
                     $otherCat = $otherInfo['category'];
                     if ($myCat === $otherCat) {
                         $imports[] = "import { {$otherType} } from './{$otherType}';";
@@ -69,7 +69,7 @@ class TypeScriptSplitWriter
             }
 
             $fileContent = $banner;
-            if (! empty($imports)) {
+            if ($imports !== []) {
                 $fileContent .= implode("\n", $imports)."\n\n";
             }
             $fileContent .= $myContent."\n";

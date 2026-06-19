@@ -55,7 +55,7 @@ class RelationResolver
         // MorphTo — related class is dynamic, read morph map
         if ($detected['kind'] === 'morph_to' && $relation instanceof MorphTo) {
             $morphMap = Relation::morphMap();
-            $morphTypes = ! empty($morphMap) ? array_values($morphMap) : null;
+            $morphTypes = empty($morphMap) ? null : array_values($morphMap);
 
             return [
                 'kind' => 'morph_to',
