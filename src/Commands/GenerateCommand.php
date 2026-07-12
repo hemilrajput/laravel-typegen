@@ -268,7 +268,7 @@ class GenerateCommand extends Command
     protected function runHooks(array $commands, string $filePath): void
     {
         foreach ($commands as $command) {
-            $cmd = str_replace('{file}', $filePath, $command);
+            $cmd = str_replace('{file}', escapeshellarg($filePath), $command);
 
             try {
                 if (class_exists(Process::class)) {

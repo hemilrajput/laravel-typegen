@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-07-12
+
+### Security
+- Fixed a Medium-severity Path Traversal vulnerability where manipulated output path configurations could write or delete files outside the project root. (SEC-001)
+- Fixed a High-severity Command Injection vulnerability where output paths containing spaces or shell meta-characters passed to pre/post generation hooks were not escaped properly. (SEC-002)
+
+### Changed
+- **FormRequest Nullable arrays**: Fixed a critical logic bug where nested objects and arrays of objects ignored `nullable: true` rules, strictly outputting them as required and non-null. The generated types now properly suffix `| null` and apply optional parameters (`?`) where appropriate. (BUG-003)
+- **Model Accessor Type Inference**: Added support for parsing native PHP return types on custom model accessors (e.g. `public function getIsAdminAttribute(): bool`). Previously, un-casted appended attributes blindly defaulted to `any`. The generator now maps `array` to `any[]` and `object` to `Record<string, any>`. (BUG-004)
+
 ## [2.1.1] - 2026-06-20
 
 ### Fixed
@@ -113,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
 
+[2.2.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.0.1...v2.0.2

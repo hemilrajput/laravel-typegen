@@ -54,7 +54,7 @@ it('generates types for an enum and a request together', function (): void {
         ->toContain("export type PostStatus = 'draft' | 'published';")
         ->toContain('export interface StorePostRequest')
         ->toContain('title: string;')
-        ->toContain('author: {')
+        ->toContain('author?: {')
         ->toContain('name: string;')
         ->toContain('export interface User');
 
@@ -81,7 +81,7 @@ it('handles messy form requests without crashing', function (): void {
     expect($contents)->toContain('items: {');
     expect($contents)->toContain('name: string;');
     expect($contents)->toContain('qty: number;');
-    expect($contents)->toContain('metadata: {');
+    expect($contents)->toContain('metadata?: {');
     expect($contents)->toContain('key?: string;');
 
     @unlink($outputPath);

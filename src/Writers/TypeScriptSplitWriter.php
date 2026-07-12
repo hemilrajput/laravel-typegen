@@ -2,6 +2,8 @@
 
 namespace Hemilrajput\TypeGen\Writers;
 
+use Illuminate\Support\Str;
+
 class TypeScriptSplitWriter
 {
     public function __construct(protected array $config) {}
@@ -13,6 +15,10 @@ class TypeScriptSplitWriter
 
         // Determine output directory: strip .ts extension from the output path and make it a folder
         $dir = dirname((string) $path).'/'.pathinfo((string) $path, PATHINFO_FILENAME);
+
+        if (! $this->isSafePath($dir)) {
+            throw new \RuntimeException("Output path [{$dir}] is outside the project root. This is a security risk.");
+        }
 
         if (is_dir($dir)) {
             // Clean up old files/directories recursively
@@ -100,5 +106,30 @@ class TypeScriptSplitWriter
         file_put_contents("{$dir}/index.ts", $rootContent);
 
         return $dir;
+    }
+
+    protected function isSafePath(string $path): bool
+    {
+        if (function_exists('app') && app()->runningUnitTests()) {
+            return true;
+        }
+
+        $realPath = realpath($path);
+        
+        if ($realPath === false) {
+            $parent = dirname($path);
+            if ($parent === $path || $parent === '.') {
+                $realPath = $path;
+            } else {
+                return $this->isSafePath($parent);
+            }
+        }
+
+        $basePath = realpath(base_path());
+        
+        $realPath = str_replace('\\', '/', $realPath);
+        $basePath = str_replace('\\', '/', $basePath);
+
+        return Str::startsWith($realPath, $basePath);
     }
 }

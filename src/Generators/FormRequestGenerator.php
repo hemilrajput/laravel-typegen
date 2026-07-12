@@ -90,7 +90,16 @@ class FormRequestGenerator
             // Array of objects (tags.*.foo)
             if (isset($node['__items'])) {
                 $inner = $this->renderTree($node['__items'], $indent + 2);
-                $lines[] = "{$pad}{$key}: {\n{$inner}\n{$pad}}[];";
+                
+                $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
+                $optional = $parentDesc['required'] ? '' : '?';
+                
+                $type = "{\n{$inner}\n{$pad}}[]";
+                if ($parentDesc['nullable']) {
+                    $type .= ' | null';
+                }
+                
+                $lines[] = "{$pad}{$key}{$optional}: {$type};";
 
                 continue;
             }
@@ -100,13 +109,15 @@ class FormRequestGenerator
             $children = array_filter($node, fn ($k): bool => ! str_starts_with((string) $k, '__'), ARRAY_FILTER_USE_KEY);
             $inner = $this->renderTree($children, $indent + 2);
 
-            $optional = '';
-            if ($rulesAtThisLevel) {
-                $desc = $this->mapper->map($rulesAtThisLevel);
-                $optional = $desc['required'] ? '' : '?';
+            $parentDesc = $rulesAtThisLevel ? $this->mapper->map($rulesAtThisLevel) : ['required' => false, 'nullable' => false];
+            $optional = $parentDesc['required'] ? '' : '?';
+            
+            $type = "{\n{$inner}\n{$pad}}";
+            if ($parentDesc['nullable']) {
+                $type .= ' | null';
             }
 
-            $lines[] = "{$pad}{$key}{$optional}: {\n{$inner}\n{$pad}};";
+            $lines[] = "{$pad}{$key}{$optional}: {$type};";
         }
 
         return implode("\n", $lines);

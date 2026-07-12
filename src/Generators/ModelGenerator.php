@@ -115,7 +115,27 @@ class ModelGenerator
                 continue;
             }
 
-            $fields[$appended] = isset($casts[$appended]) ? $this->mapper->toTypeScript($casts[$appended]) : 'any';
+            if (isset($casts[$appended])) {
+                $fields[$appended] = $this->mapper->toTypeScript($casts[$appended]);
+                continue;
+            }
+
+            $inferred = 'any';
+            $studly = \Illuminate\Support\Str::studly($appended);
+            $methodName = "get{$studly}Attribute";
+
+            if (method_exists($model, $methodName)) {
+                $rm = new \ReflectionMethod($model, $methodName);
+                $rt = $rm->getReturnType();
+                if ($rt instanceof \ReflectionNamedType) {
+                    $inferred = $this->dbTypeToTypeScript($rt->getName());
+                    if ($rt->allowsNull()) {
+                        $inferred .= ' | null';
+                    }
+                }
+            }
+
+            $fields[$appended] = $inferred;
         }
 
         return $fields;
@@ -128,6 +148,8 @@ class ModelGenerator
         return match ($typeName) {
             'integer', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'float', 'double', 'decimal', 'numeric' => 'number',
             'boolean', 'bool' => 'boolean',
+            'array' => 'any[]',
+            'object', 'stdclass' => 'Record<string, any>',
             'json' => 'any',
             default => 'string',
         };
