@@ -3,6 +3,7 @@
 namespace Hemilrajput\TypeGen\Generators;
 
 use Hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Compilers\ZodCompiler;
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
 use Hemilrajput\TypeGen\Mappers\RuleTree;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,16 +29,16 @@ class FormRequestGenerator
         }
 
         if ($rules === []) {
-            return "export interface {$name} {}" . ($this->config['output']['zod'] ?? false ? "\nexport const {$name}Schema = z.object({});" : "");
+            return "export interface {$name} {}".($this->config['output']['zod'] ?? false ? "\nexport const {$name}Schema = z.object({});" : '');
         }
 
         $tree = $this->tree->build($rules);
         $body = $this->renderTree($tree, indent: 2);
-        
+
         $output = "export interface {$name} {\n{$body}\n}";
 
         if ($this->config['output']['zod'] ?? false) {
-            $zodCompiler = new \Hemilrajput\TypeGen\Compilers\ZodCompiler($this->mapper);
+            $zodCompiler = new ZodCompiler($this->mapper);
             $zodBody = $zodCompiler->compile($tree, indent: 2);
             $output .= "\n\nexport const {$name}Schema = z.object({\n{$zodBody}\n});";
         }

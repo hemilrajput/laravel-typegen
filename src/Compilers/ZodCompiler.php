@@ -20,15 +20,16 @@ class ZodCompiler
             if (isset($node['__rules']) && count($node) === 1) {
                 $desc = $this->mapper->map($node['__rules']);
                 $zodType = $this->toZodType($desc['type']);
-                
+
                 if ($desc['nullable']) {
                     $zodType .= '.nullable()';
                 }
-                if (!$desc['required']) {
+                if (! $desc['required']) {
                     $zodType .= '.optional()';
                 }
-                
+
                 $lines[] = "{$pad}{$key}: {$zodType},";
+
                 continue;
             }
 
@@ -36,18 +37,19 @@ class ZodCompiler
             if (isset($node['__item_rules']) && ! isset($node['__items'])) {
                 $itemDesc = $this->mapper->map($node['__item_rules']);
                 $zodItemType = $this->toZodType($itemDesc['type']);
-                
+
                 $zodType = "z.array({$zodItemType})";
-                
+
                 $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
                 if ($parentDesc['nullable']) {
                     $zodType .= '.nullable()';
                 }
-                if (!$parentDesc['required']) {
+                if (! $parentDesc['required']) {
                     $zodType .= '.optional()';
                 }
-                
+
                 $lines[] = "{$pad}{$key}: {$zodType},";
+
                 continue;
             }
 
@@ -55,16 +57,17 @@ class ZodCompiler
             if (isset($node['__items'])) {
                 $inner = $this->compile($node['__items'], $indent + 2);
                 $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
-                
+
                 $zodType = "z.array(z.object({\n{$inner}\n{$pad}}))";
                 if ($parentDesc['nullable']) {
                     $zodType .= '.nullable()';
                 }
-                if (!$parentDesc['required']) {
+                if (! $parentDesc['required']) {
                     $zodType .= '.optional()';
                 }
 
                 $lines[] = "{$pad}{$key}: {$zodType},";
+
                 continue;
             }
 
@@ -74,12 +77,12 @@ class ZodCompiler
             $inner = $this->compile($children, $indent + 2);
 
             $parentDesc = $rulesAtThisLevel ? $this->mapper->map($rulesAtThisLevel) : ['required' => false, 'nullable' => false];
-            
+
             $zodType = "z.object({\n{$inner}\n{$pad}})";
             if ($parentDesc['nullable']) {
                 $zodType .= '.nullable()';
             }
-            if (!$parentDesc['required']) {
+            if (! $parentDesc['required']) {
                 $zodType .= '.optional()';
             }
 
@@ -93,7 +96,8 @@ class ZodCompiler
     {
         if (str_ends_with($type, '[]')) {
             $base = substr($type, 0, -2);
-            return "z.array(" . $this->toZodType($base) . ")";
+
+            return 'z.array('.$this->toZodType($base).')';
         }
 
         return match ($type) {
@@ -125,6 +129,7 @@ class ZodCompiler
                 return $literals[0];
             }
             $joined = implode(', ', $literals);
+
             return "z.union([{$joined}])";
         }
 
