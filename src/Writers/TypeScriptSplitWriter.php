@@ -115,7 +115,7 @@ class TypeScriptSplitWriter
         }
 
         $realPath = realpath($path);
-        
+
         if ($realPath === false) {
             $parent = dirname($path);
             if ($parent === $path || $parent === '.') {
@@ -126,7 +126,7 @@ class TypeScriptSplitWriter
         }
 
         $basePath = realpath(base_path());
-        
+
         $realPath = str_replace('\\', '/', $realPath);
         $basePath = str_replace('\\', '/', $basePath);
 

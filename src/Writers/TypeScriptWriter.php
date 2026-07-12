@@ -36,7 +36,7 @@ class TypeScriptWriter
         }
 
         $realPath = realpath($path);
-        
+
         if ($realPath === false) {
             // Path doesn't exist yet, check its parent recursively
             $parent = dirname($path);
@@ -48,7 +48,7 @@ class TypeScriptWriter
         }
 
         $basePath = realpath(base_path());
-        
+
         $realPath = str_replace('\\', '/', $realPath);
         $basePath = str_replace('\\', '/', $basePath);
 

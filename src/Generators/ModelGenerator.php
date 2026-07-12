@@ -8,6 +8,7 @@ use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use Hemilrajput\TypeGen\Relations\RelationResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use ReflectionClass;
 
 class ModelGenerator
@@ -117,11 +118,12 @@ class ModelGenerator
 
             if (isset($casts[$appended])) {
                 $fields[$appended] = $this->mapper->toTypeScript($casts[$appended]);
+
                 continue;
             }
 
             $inferred = 'any';
-            $studly = \Illuminate\Support\Str::studly($appended);
+            $studly = Str::studly($appended);
             $methodName = "get{$studly}Attribute";
 
             if (method_exists($model, $methodName)) {

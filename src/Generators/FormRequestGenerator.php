@@ -90,15 +90,15 @@ class FormRequestGenerator
             // Array of objects (tags.*.foo)
             if (isset($node['__items'])) {
                 $inner = $this->renderTree($node['__items'], $indent + 2);
-                
+
                 $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
                 $optional = $parentDesc['required'] ? '' : '?';
-                
+
                 $type = "{\n{$inner}\n{$pad}}[]";
                 if ($parentDesc['nullable']) {
                     $type .= ' | null';
                 }
-                
+
                 $lines[] = "{$pad}{$key}{$optional}: {$type};";
 
                 continue;
@@ -111,7 +111,7 @@ class FormRequestGenerator
 
             $parentDesc = $rulesAtThisLevel ? $this->mapper->map($rulesAtThisLevel) : ['required' => false, 'nullable' => false];
             $optional = $parentDesc['required'] ? '' : '?';
-            
+
             $type = "{\n{$inner}\n{$pad}}";
             if ($parentDesc['nullable']) {
                 $type .= ' | null';
