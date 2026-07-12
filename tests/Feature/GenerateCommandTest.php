@@ -62,7 +62,7 @@ it('generates types for an enum and a request together', function (): void {
 it('generates zod schemas when configured', function (): void {
     config()->set('typegen.paths.enums', __DIR__.'/../Fixtures/Enums');
     config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
-    config()->set('typegen.paths.models', null);
+    config()->set('typegen.paths.models');
     config()->set('typegen.output.zod', true);
 
     $outputPath = sys_get_temp_dir().'/zod_test.ts';

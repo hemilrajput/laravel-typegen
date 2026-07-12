@@ -113,7 +113,7 @@ class ZodCompiler
     protected function handleComplexType(string $type): string
     {
         if (str_contains($type, '|')) {
-            $parts = array_map('trim', explode('|', $type));
+            $parts = array_map(trim(...), explode('|', $type));
             $literals = [];
             foreach ($parts as $part) {
                 // If it's a string literal like 'admin'
@@ -134,7 +134,7 @@ class ZodCompiler
         }
 
         // If it's a PascalCase word, it's likely an Enum reference
-        if (preg_match('/^[A-Z][a-zA-Z0-9_]*$/', $type)) {
+        if (preg_match('/^[A-Z]\w*$/', $type)) {
             return "z.nativeEnum({$type})";
         }
 
