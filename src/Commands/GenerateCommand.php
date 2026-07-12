@@ -240,6 +240,13 @@ class GenerateCommand extends Command
             ]);
         }
 
+        if ($requests !== [] && ($config['output']['zod'] ?? false)) {
+            array_unshift($allBlocks, [
+                'category' => 'Imports',
+                'content' => "import { z } from 'zod';",
+            ]);
+        }
+
         if ($allBlocks === []) {
             $this->warn('No classes found. Did you add the #[TypeScript] attribute?');
 

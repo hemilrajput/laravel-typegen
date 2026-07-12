@@ -57,6 +57,27 @@ it('generates types for an enum and a request together', function (): void {
         ->toContain('author?: {')
         ->toContain('name: string;')
         ->toContain('export interface User');
+});
+
+it('generates zod schemas when configured', function (): void {
+    config()->set('typegen.paths.enums', __DIR__.'/../Fixtures/Enums');
+    config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
+    config()->set('typegen.paths.models', null);
+    config()->set('typegen.output.zod', true);
+
+    $outputPath = sys_get_temp_dir().'/zod_test.ts';
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    expect($contents)
+        ->toContain("import { z } from 'zod';")
+        ->toContain('export const StorePostRequestSchema = z.object({')
+        ->toContain('title: z.string(),')
+        ->toContain('author: z.object({')
+        ->toContain('name: z.string(),');
 
     @unlink($outputPath);
 });

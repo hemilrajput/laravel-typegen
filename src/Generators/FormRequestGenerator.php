@@ -28,13 +28,21 @@ class FormRequestGenerator
         }
 
         if ($rules === []) {
-            return "export interface {$name} {}";
+            return "export interface {$name} {}" . ($this->config['output']['zod'] ?? false ? "\nexport const {$name}Schema = z.object({});" : "");
         }
 
         $tree = $this->tree->build($rules);
         $body = $this->renderTree($tree, indent: 2);
+        
+        $output = "export interface {$name} {\n{$body}\n}";
 
-        return "export interface {$name} {\n{$body}\n}";
+        if ($this->config['output']['zod'] ?? false) {
+            $zodCompiler = new \Hemilrajput\TypeGen\Compilers\ZodCompiler($this->mapper);
+            $zodBody = $zodCompiler->compile($tree, indent: 2);
+            $output .= "\n\nexport const {$name}Schema = z.object({\n{$zodBody}\n});";
+        }
+
+        return $output;
     }
 
     protected function resolveName(ReflectionClass $reflectionClass): string
