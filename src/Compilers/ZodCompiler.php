@@ -20,7 +20,6 @@ class ZodCompiler
             // Leaf with __rules
             if (isset($node['__rules']) && count($node) === 1) {
                 $desc = $this->mapper->map($node['__rules']);
-                $desc['raw_rules'] = $node['__rules'];
                 $zodType = $this->toZodType($desc['type'], $desc);
                 $zodType = $this->applyModifiers($zodType, $desc);
 
@@ -32,7 +31,6 @@ class ZodCompiler
             // Array of primitives (tags.* with __item_rules)
             if (isset($node['__item_rules']) && ! isset($node['__items'])) {
                 $itemDesc = $this->mapper->map($node['__item_rules']);
-                $itemDesc['raw_rules'] = $node['__item_rules'];
                 $zodItemType = $this->toZodType($itemDesc['type'], $itemDesc);
 
                 $zodType = "z.array({$zodItemType})";
@@ -154,8 +152,8 @@ class ZodCompiler
         // If it's a PascalCase word, it's likely an Enum reference
         if (preg_match('/^[A-Z]\w*$/', $type)) {
             $enumValues = null;
-            if (isset($desc['raw_rules'])) {
-                $enumValues = $this->extractEnumValuesFromRules($desc['raw_rules']);
+            if (isset($desc['enum_class']) && enum_exists($desc['enum_class'])) {
+                $enumValues = $this->extractEnumValues($desc['enum_class']);
             }
 
             if (is_array($enumValues) && count($enumValues) > 0) {
@@ -182,33 +180,6 @@ class ZodCompiler
         }
 
         return 'z.any()';
-    }
-
-    protected function extractEnumValuesFromRules(array|string $rules): ?array
-    {
-        if (is_string($rules)) {
-            $rules = explode('|', $rules);
-        }
-
-        foreach ($rules as $rule) {
-            if ($rule instanceof Enum) {
-                $reflectionClass = new \ReflectionClass($rule);
-                if ($reflectionClass->hasProperty('type')) {
-                    $prop = $reflectionClass->getProperty('type');
-                    $enumClass = $prop->getValue($rule);
-                    if (is_string($enumClass) && enum_exists($enumClass)) {
-                        return $this->extractEnumValues($enumClass);
-                    }
-                }
-            } elseif (is_string($rule) && str_starts_with($rule, 'enum:')) {
-                $enumClass = substr($rule, 5);
-                if (enum_exists($enumClass)) {
-                    return $this->extractEnumValues($enumClass);
-                }
-            }
-        }
-
-        return null;
     }
 
     protected function extractEnumValues(string $enumClass): array
