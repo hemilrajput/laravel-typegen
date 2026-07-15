@@ -52,7 +52,14 @@ class ResourceGenerator
             if (str_ends_with($baseName, 'Resource')) {
                 $modelName = substr($baseName, 0, -8);
                 $modelClass = null;
-                $appNamespace = function_exists('app') ? app()->getNamespace() : 'App\\';
+                $appNamespace = 'App\\';
+                if (function_exists('app')) {
+                    try {
+                        $appNamespace = app()->getNamespace();
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+                }
                 $possibleClasses = [
                     $appNamespace."Models\\{$modelName}",
                     $appNamespace.$modelName,
