@@ -52,7 +52,10 @@ class ResourceGenerator
             if (str_ends_with($baseName, 'Resource')) {
                 $modelName = substr($baseName, 0, -8);
                 $modelClass = null;
+                $appNamespace = function_exists('app') ? app()->getNamespace() : 'App\\';
                 $possibleClasses = [
+                    $appNamespace."Models\\{$modelName}",
+                    $appNamespace.$modelName,
                     "App\\Models\\{$modelName}",
                     "App\\{$modelName}",
                     "hemilrajput\\TypeGen\\Tests\\Fixtures\\Models\\{$modelName}", // for test environment

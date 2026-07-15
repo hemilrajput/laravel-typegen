@@ -28,7 +28,7 @@ class FormRequestGenerator
         try {
             $rules = $this->extractRules($requestClass);
         } catch (\Throwable $e) {
-            return "// SKIPPED: {$name} — rules() could not be invoked: {$e->getMessage()}";
+            throw new \RuntimeException("Failed to extract rules from FormRequest [{$requestClass}]. If your rules() method depends on request state (e.g., \$this->route()), it cannot be statically analyzed. Error: ".$e->getMessage(), 0, $e);
         }
 
         if ($rules === []) {

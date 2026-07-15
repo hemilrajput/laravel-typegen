@@ -24,8 +24,15 @@ class RoutesGenerator
             foreach ($route->parameterNames() as $param) {
                 // Check if parameter is optional in the URI pattern (e.g. {user?})
                 $isOptional = str_contains($uri, '{'.$param.'?}');
+                $constraint = $route->wheres[$param] ?? null;
+                $type = 'string | number';
+                if ($constraint === '[0-9]+' || $constraint === '\d+') {
+                    $type = 'number';
+                }
+
                 $params[$param] = [
                     'optional' => $isOptional,
+                    'type' => $type,
                 ];
             }
 
@@ -51,7 +58,8 @@ class RoutesGenerator
                 $fields = [];
                 foreach ($params as $paramName => $meta) {
                     $opt = $meta['optional'] ? '?' : '';
-                    $fields[] = "{$paramName}{$opt}: string | number";
+                    $type = $meta['type'] ?? 'string | number';
+                    $fields[] = "{$paramName}{$opt}: {$type}";
                 }
                 $fieldsStr = implode('; ', $fields);
                 $paramLines[] = "  T extends '{$name}' ? { {$fieldsStr} } :";

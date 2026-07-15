@@ -158,7 +158,14 @@ class GenerateCommand extends Command
                     $this->line("  ✓ request {$request}");
                 }
 
-                $content = $formRequestGenerator->generate($request);
+                try {
+                    $content = $formRequestGenerator->generate($request);
+                } catch (\Throwable $e) {
+                    $this->warn("\n  ⚠ Skipped request {$request}: ".$e->getMessage());
+
+                    continue;
+                }
+
                 if (str_contains($content, 'z.object(') || str_contains($content, 'z.any(')) {
                     $hasZodSchema = true;
                 }

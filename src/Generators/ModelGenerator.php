@@ -29,7 +29,7 @@ class ModelGenerator
         $ignore = $attr ? $attr->newInstance()->ignore : [];
 
         $name = $this->resolveName($reflectionClass);
-        $fields = $this->collectFields($instance, $ignore);
+        $fields = $this->collectFields($instance, $reflectionClass, $ignore);
         $relationResult = $this->collectRelations($reflectionClass, $modelClass, $ignore);
 
         $allLines = [];
@@ -70,10 +70,23 @@ class ModelGenerator
     }
 
     /** @return array<string,string> */
-    protected function collectFields(Model $model, array $ignore = []): array
+    protected function collectFields(Model $model, ReflectionClass $reflectionClass, array $ignore = []): array
     {
         $fields = [];
         $table = $model->getTable();
+
+        // 0. Parse PHPDoc @property annotations
+        $docComment = $reflectionClass->getDocComment();
+        if ($docComment) {
+            preg_match_all('/@property(?:-read)?\s+([^\s]+)\s+\$(\w+)/', $docComment, $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                $type = $match[1];
+                $name = $match[2];
+                if (! in_array($name, $ignore, true)) {
+                    $fields[$name] = $this->parsePhpDocType($type);
+                }
+            }
+        }
 
         if (! Schema::hasTable($table)) {
             throw new \RuntimeException("Table [{$table}] does not exist. Please migrate your database before generating types.");
@@ -101,7 +114,17 @@ class ModelGenerator
                 $baseType = $this->dbTypeToTypeScript($dbColumn['type_name']);
             }
 
-            $fields[$attr] = ($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType;
+            $readonly = $model->isFillable($attr) ? '' : 'readonly ';
+
+            $tsType = (($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType);
+
+            // If it's already defined via PHPDoc, don't overwrite the type but we can keep the readonly modifier logic.
+            if (! isset($fields[$attr])) {
+                $fields[$attr] = $readonly.$tsType;
+            } elseif (! str_starts_with($fields[$attr], 'readonly ') && $readonly) {
+                // Prepend readonly if not already present
+                $fields[$attr] = $readonly.$fields[$attr];
+            }
         }
 
         // 2. Process Appended Attributes
@@ -117,7 +140,7 @@ class ModelGenerator
             }
 
             if (isset($casts[$appended])) {
-                $fields[$appended] = $this->mapper->toTypeScript($casts[$appended]);
+                $fields[$appended] = 'readonly '.$this->mapper->toTypeScript($casts[$appended]);
 
                 continue;
             }
@@ -137,7 +160,7 @@ class ModelGenerator
                 }
             }
 
-            $fields[$appended] = $inferred;
+            $fields[$appended] = 'readonly '.$inferred;
         }
 
         return $fields;
@@ -152,9 +175,53 @@ class ModelGenerator
             'boolean', 'bool' => 'boolean',
             'array' => 'any[]',
             'object', 'stdclass' => 'Record<string, any>',
-            'json' => 'any',
+            'json' => 'Record<string, unknown>',
             default => 'string',
         };
+    }
+
+    protected function parsePhpDocType(string $type): string
+    {
+        $type = trim($type);
+        $isNullable = false;
+
+        if (str_starts_with($type, '?')) {
+            $isNullable = true;
+            $type = substr($type, 1);
+        }
+
+        $types = explode('|', $type);
+        $mappedTypes = [];
+
+        foreach ($types as $t) {
+            $t = strtolower(trim($t));
+            if ($t === 'null') {
+                $isNullable = true;
+
+                continue;
+            }
+
+            $mapped = match ($t) {
+                'int', 'integer', 'float', 'double' => 'number',
+                'string' => 'string',
+                'bool', 'boolean' => 'boolean',
+                'array' => 'any[]',
+                'mixed' => 'any',
+                default => 'any',
+            };
+
+            if ($mapped === 'any' && preg_match('/^[A-Z]\w+$/', trim($t))) {
+                $mapped = trim($t);
+            }
+            $mappedTypes[] = $mapped;
+        }
+
+        $union = implode(' | ', array_unique($mappedTypes));
+        if ($isNullable) {
+            return "{$union} | null";
+        }
+
+        return $union;
     }
 
     /**
