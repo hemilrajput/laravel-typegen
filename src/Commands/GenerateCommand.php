@@ -157,12 +157,12 @@ class GenerateCommand extends Command
                 if ($isVerbose) {
                     $this->line("  ✓ request {$request}");
                 }
-                
+
                 $content = $formRequestGenerator->generate($request);
                 if (str_contains($content, 'z.object(') || str_contains($content, 'z.any(')) {
                     $hasZodSchema = true;
                 }
-                
+
                 $blocks[] = [
                     'category' => 'Requests',
                     'content' => $content,

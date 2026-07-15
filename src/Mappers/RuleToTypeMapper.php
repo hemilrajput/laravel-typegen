@@ -85,8 +85,13 @@ class RuleToTypeMapper
         $values = array_map(
             function ($v): string {
                 $v = trim($v, "\"' ");
-                if (is_numeric($v)) return $v;
-                if ($v === 'null') return 'null';
+                if (is_numeric($v)) {
+                    return $v;
+                }
+                if ($v === 'null') {
+                    return 'null';
+                }
+
                 return "'".$v."'";
             },
             explode(',', $arg),

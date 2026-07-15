@@ -3,6 +3,7 @@
 namespace Hemilrajput\TypeGen\Compilers;
 
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
+use Illuminate\Validation\Rules\Enum;
 
 class ZodCompiler
 {
@@ -77,18 +78,18 @@ class ZodCompiler
     {
         $nullable = $desc['nullable'] ?? false;
         $required = $desc['required'] ?? false;
-        
-        if ($nullable && !$required) {
-            return $zodType . '.nullish()';
+
+        if ($nullable && ! $required) {
+            return $zodType.'.nullish()';
         }
-        
+
         if ($nullable) {
             $zodType .= '.nullable()';
         }
-        if (!$required) {
+        if (! $required) {
             $zodType .= '.optional()';
         }
-        
+
         return $zodType;
     }
 
@@ -129,7 +130,7 @@ class ZodCompiler
                     $zLiterals[] = "z.literal({$part})";
                 } elseif ($part === 'null') {
                     $isAllStrings = false;
-                    $zLiterals[] = "z.literal(null)";
+                    $zLiterals[] = 'z.literal(null)';
                 } else {
                     return 'z.any()'; // Fallback if mixed
                 }
@@ -137,6 +138,7 @@ class ZodCompiler
 
             if ($isAllStrings && count($stringLiterals) > 1) {
                 $joined = implode(', ', $stringLiterals);
+
                 return "z.enum([{$joined}])";
             }
 
@@ -158,22 +160,24 @@ class ZodCompiler
 
             if (is_array($enumValues) && count($enumValues) > 0) {
                 $isAllStrings = true;
-                foreach ($enumValues as $val) {
-                    if (!preg_match('/^[\'"](.*)[\'"]$/', $val)) {
+                foreach ($enumValues as $enumValue) {
+                    if (! preg_match('/^[\'"](.*)[\'"]$/', (string) $enumValue)) {
                         $isAllStrings = false;
                         break;
                     }
                 }
-                
+
                 if ($isAllStrings) {
                     $joined = implode(', ', $enumValues);
+
                     return "z.enum([{$joined}])";
-                } else {
-                    $zLiterals = array_map(fn($v) => "z.literal({$v})", $enumValues);
-                    $joined = implode(', ', $zLiterals);
-                    return "z.union([{$joined}])";
                 }
+                $zLiterals = array_map(fn ($v): string => "z.literal({$v})", $enumValues);
+                $joined = implode(', ', $zLiterals);
+
+                return "z.union([{$joined}])";
             }
+
             return 'z.any()';
         }
 
@@ -187,7 +191,7 @@ class ZodCompiler
         }
 
         foreach ($rules as $rule) {
-            if ($rule instanceof \Illuminate\Validation\Rules\Enum) {
+            if ($rule instanceof Enum) {
                 $reflectionClass = new \ReflectionClass($rule);
                 if ($reflectionClass->hasProperty('type')) {
                     $prop = $reflectionClass->getProperty('type');
@@ -203,7 +207,7 @@ class ZodCompiler
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -211,17 +215,18 @@ class ZodCompiler
     {
         $values = [];
         $reflectionEnum = new \ReflectionEnum($enumClass);
-        foreach ($reflectionEnum->getCases() as $case) {
-            if ($case instanceof \ReflectionEnumBackedCase) {
+        foreach ($reflectionEnum->getCases() as $reflectionEnumUnitCase) {
+            if ($reflectionEnumUnitCase instanceof \ReflectionEnumBackedCase) {
                 $backingType = $reflectionEnum->getBackingType()?->getName();
-                $val = $case->getBackingValue();
+                $val = $reflectionEnumUnitCase->getBackingValue();
                 $values[] = $backingType === 'string'
                     ? "'".str_replace("'", "\\'", (string) $val)."'"
                     : (string) $val;
             } else {
-                $values[] = "'".$case->getName()."'";
+                $values[] = "'".$reflectionEnumUnitCase->getName()."'";
             }
         }
+
         return $values;
     }
 }

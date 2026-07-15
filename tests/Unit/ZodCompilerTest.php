@@ -3,6 +3,7 @@
 use Hemilrajput\TypeGen\Compilers\ZodCompiler;
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
 use Hemilrajput\TypeGen\Mappers\RuleTree;
+use Illuminate\Validation\Rules\Enum;
 
 it('compiles flat rules into a Zod schema', function (): void {
     $tree = (new RuleTree)->build([
@@ -68,14 +69,15 @@ it('compiles in rules to z.enum()', function (): void {
     expect($zod)->toContain("status: z.enum(['draft', 'published']),");
 });
 
-enum PostStatus: string {
+enum PostStatus: string
+{
     case Draft = 'draft';
     case Published = 'published';
 }
 
 it('compiles Enum references to z.enum()', function (): void {
     $tree = (new RuleTree)->build([
-        'status' => ['required', new \Illuminate\Validation\Rules\Enum(PostStatus::class)],
+        'status' => ['required', new Enum(PostStatus::class)],
     ]);
 
     $compiler = new ZodCompiler(new RuleToTypeMapper);
