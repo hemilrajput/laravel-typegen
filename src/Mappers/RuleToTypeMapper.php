@@ -107,7 +107,7 @@ class RuleToTypeMapper
         // Laravel's Enum rule exposes the enum class.
         if ($rule instanceof EnumRule) {
             // The class is protected; use a bound closure to read it safely.
-            $enumClass = (fn () => $this->type ?? null)->call($rule);
+            $enumClass = (fn () => $this->type)->call($rule);
 
             if (is_string($enumClass) && enum_exists($enumClass)) {
                 $enumClassRef = $enumClass;

@@ -58,7 +58,7 @@ class RoutesGenerator
                 $fields = [];
                 foreach ($params as $paramName => $meta) {
                     $opt = $meta['optional'] ? '?' : '';
-                    $type = $meta['type'] ?? 'string | number';
+                    $type = $meta['type'];
                     $fields[] = "{$paramName}{$opt}: {$type}";
                 }
                 $fieldsStr = implode('; ', $fields);
