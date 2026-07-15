@@ -16,7 +16,7 @@ it('generates a typescript file from a model with #[TypeScript]', function (): v
 
     $contents = file_get_contents($outputPath);
     expect($contents)->toContain('export interface User');
-    expect($contents)->toContain('is_admin: boolean');
+    expect($contents)->toContain('readonly is_admin: boolean');
     expect($contents)->toContain('name: string');
 
     @unlink($outputPath);
@@ -57,6 +57,27 @@ it('generates types for an enum and a request together', function (): void {
         ->toContain('author?: {')
         ->toContain('name: string;')
         ->toContain('export interface User');
+});
+
+it('generates zod schemas when configured', function (): void {
+    config()->set('typegen.paths.enums', __DIR__.'/../Fixtures/Enums');
+    config()->set('typegen.paths.form_requests', __DIR__.'/../Fixtures/Requests');
+    config()->set('typegen.paths.models');
+    config()->set('typegen.output.zod', true);
+
+    $outputPath = sys_get_temp_dir().'/zod_test.ts';
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    expect($contents)
+        ->toContain("import { z } from 'zod';")
+        ->toContain('export const StorePostRequestSchema = z.object({')
+        ->toContain('title: z.string(),')
+        ->toContain('author: z.object({')
+        ->toContain('name: z.string(),');
 
     @unlink($outputPath);
 });
@@ -179,7 +200,7 @@ it('respects ignore attributes and parameters', function (): void {
 
     expect($ignoredUserBlock)->toContain('export interface IgnoredUser')
         ->and($ignoredUserBlock)->toContain('name: string;')
-        ->and($ignoredUserBlock)->toContain('updated_at: string | null;')
+        ->and($ignoredUserBlock)->toContain('readonly updated_at: string | null;')
         ->and($ignoredUserBlock)->not->toContain('email:')
         ->and($ignoredUserBlock)->not->toContain('posts?')
         ->and($ignoredUserBlock)->not->toContain('profile?')
@@ -216,8 +237,8 @@ it('infers types and nullability from database schema when table exists', functi
 
     expect($userBlock)->toContain('name: string;')
         ->and($userBlock)->toContain('email: string | null;') // inferred nullability from DB
-        ->and($userBlock)->toContain('age: number;')          // inferred integer -> number from DB
-        ->and($userBlock)->toContain('is_active: number;');   // SQLite maps boolean to integer/number
+        ->and($userBlock)->toContain('readonly age: number;')          // inferred integer -> number from DB
+        ->and($userBlock)->toContain('readonly is_active: number;');   // SQLite maps boolean to integer/number
 
     @unlink($outputPath);
     Schema::drop('users');
@@ -366,4 +387,4 @@ it('generates valid typescript that compiles', function (): void {
     );
 
     @unlink($outputPath);
-})->skip(fn (): bool => ! trim(shell_exec('which npx')), 'npx is not installed');
+})->skip(fn (): bool => false, 'npx is not installed');

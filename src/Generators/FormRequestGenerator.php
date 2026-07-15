@@ -3,6 +3,7 @@
 namespace Hemilrajput\TypeGen\Generators;
 
 use Hemilrajput\TypeGen\Attributes\TypeScript;
+use Hemilrajput\TypeGen\Compilers\ZodCompiler;
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
 use Hemilrajput\TypeGen\Mappers\RuleTree;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,7 +15,10 @@ class FormRequestGenerator
         protected RuleToTypeMapper $mapper,
         protected RuleTree $tree,
         protected array $config,
-    ) {}
+        protected ?ZodCompiler $zodCompiler = null,
+    ) {
+        $this->zodCompiler = $zodCompiler ?? new ZodCompiler($this->mapper);
+    }
 
     public function generate(string $requestClass): string
     {
@@ -24,17 +28,24 @@ class FormRequestGenerator
         try {
             $rules = $this->extractRules($requestClass);
         } catch (\Throwable $e) {
-            return "// SKIPPED: {$name} — rules() could not be invoked: {$e->getMessage()}";
+            throw new \RuntimeException("Failed to extract rules from FormRequest [{$requestClass}]. If your rules() method depends on request state (e.g., \$this->route()), it cannot be statically analyzed. Error: ".$e->getMessage(), 0, $e);
         }
 
         if ($rules === []) {
-            return "export interface {$name} {}";
+            return "export interface {$name} {}".($this->config['output']['zod'] ?? false ? "\nexport const {$name}Schema = z.object({});" : '');
         }
 
         $tree = $this->tree->build($rules);
         $body = $this->renderTree($tree, indent: 2);
 
-        return "export interface {$name} {\n{$body}\n}";
+        $output = "export interface {$name} {\n{$body}\n}";
+
+        if ($this->config['output']['zod'] ?? false) {
+            $zodBody = $this->zodCompiler->compile($tree, indent: 2);
+            $output .= "\n\nexport const {$name}Schema = z.object({\n{$zodBody}\n});";
+        }
+
+        return $output;
     }
 
     protected function resolveName(ReflectionClass $reflectionClass): string

@@ -57,7 +57,11 @@ class ClassScanner
             return null;
         }
 
-        $className = pathinfo($path, PATHINFO_FILENAME);
+        if (! preg_match('/(?:class|interface|trait|enum)\s+(\w+)/', $contents, $classMatch)) {
+            return null;
+        }
+
+        $className = $classMatch[1];
 
         return trim($ns[1]).'\\'.$className;
     }

@@ -18,11 +18,12 @@ class RuleToTypeMapper
         $required = false;
         $nullable = false;
         $isArray = false;
+        $enumClass = null;
 
         foreach ($tokens as $token) {
             // Object rules (Enum, In, Rule::in(...), etc.)
             if (is_object($token)) {
-                $type ??= $this->describeObjectRule($token);
+                $type ??= $this->describeObjectRule($token, $enumClass);
 
                 continue;
             }
@@ -44,7 +45,7 @@ class RuleToTypeMapper
                 in_array($name, ['date', 'date_format', 'before', 'after']) => $type ??= 'string',
                 in_array($name, ['file', 'image', 'mimes']) => $type ??= 'File',
                 $name === 'in' && $arg => $type ??= $this->inToUnion($arg),
-                $name === 'enum' && $arg => $type ??= class_basename($arg),
+                $name === 'enum' && $arg => $this->handleEnumStringRule($arg, $type, $enumClass),
                 default => null,
             };
         }
@@ -58,6 +59,7 @@ class RuleToTypeMapper
             'type' => $type,
             'required' => $required && ! $nullable,
             'nullable' => $nullable,
+            'enum_class' => $enumClass,
         ];
     }
 
@@ -83,25 +85,34 @@ class RuleToTypeMapper
     protected function inToUnion(string $arg): string
     {
         $values = array_map(
-            fn ($v): string => is_numeric($v) ? $v : "'".trim($v, "\"' ")."'",
+            function ($v): string {
+                $v = trim($v, "\"' ");
+                if (is_numeric($v)) {
+                    return $v;
+                }
+                if ($v === 'null') {
+                    return 'null';
+                }
+
+                return "'".$v."'";
+            },
             explode(',', $arg),
         );
 
         return implode(' | ', $values);
     }
 
-    protected function describeObjectRule(object $rule): ?string
+    protected function describeObjectRule(object $rule, ?string &$enumClassRef = null): ?string
     {
         // Laravel's Enum rule exposes the enum class.
         if ($rule instanceof EnumRule) {
-            // The class is protected; reflect to read it.
-            $reflectionClass = new \ReflectionClass($rule);
-            if ($reflectionClass->hasProperty('type')) {
-                $prop = $reflectionClass->getProperty('type');
-                $enumClass = $prop->getValue($rule);
-                if (is_string($enumClass) && enum_exists($enumClass)) {
-                    return class_basename($enumClass);
-                }
+            // The class is protected; use a bound closure to read it safely.
+            $enumClass = (fn () => $this->type)->call($rule);
+
+            if (is_string($enumClass) && enum_exists($enumClass)) {
+                $enumClassRef = $enumClass;
+
+                return class_basename($enumClass);
             }
         }
 
@@ -112,5 +123,11 @@ class RuleToTypeMapper
         }
 
         return null;
+    }
+
+    protected function handleEnumStringRule(string $arg, ?string &$type, ?string &$enumClass): void
+    {
+        $type ??= class_basename($arg);
+        $enumClass ??= $arg;
     }
 }

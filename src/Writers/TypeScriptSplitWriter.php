@@ -29,7 +29,7 @@ class TypeScriptSplitWriter
             foreach ($iterator as $file) {
                 if ($file->isDir()) {
                     @rmdir($file->getRealPath());
-                } else {
+                } elseif ($file->getExtension() === 'ts') {
                     @unlink($file->getRealPath());
                 }
             }
@@ -63,8 +63,8 @@ class TypeScriptSplitWriter
                     continue;
                 }
 
-                // Match exact word boundaries
-                if (preg_match('/\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
+                // Match type usage contexts (e.g. `: Type`, `<Type>`, `| Type`, `extends Type`)
+                if (preg_match('/(?:[:<|&]\s*(?:readonly\s+)?|extends\s+|implements\s+|type\s+\w+\s*=\s*)\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
                     $otherCat = $otherInfo['category'];
                     if ($myCat === $otherCat) {
                         $imports[] = "import { {$otherType} } from './{$otherType}';";
