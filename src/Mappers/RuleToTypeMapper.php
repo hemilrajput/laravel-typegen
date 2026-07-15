@@ -83,7 +83,12 @@ class RuleToTypeMapper
     protected function inToUnion(string $arg): string
     {
         $values = array_map(
-            fn ($v): string => is_numeric($v) ? $v : "'".trim($v, "\"' ")."'",
+            function ($v): string {
+                $v = trim($v, "\"' ");
+                if (is_numeric($v)) return $v;
+                if ($v === 'null') return 'null';
+                return "'".$v."'";
+            },
             explode(',', $arg),
         );
 

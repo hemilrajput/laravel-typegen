@@ -19,14 +19,9 @@ class ZodCompiler
             // Leaf with __rules
             if (isset($node['__rules']) && count($node) === 1) {
                 $desc = $this->mapper->map($node['__rules']);
-                $zodType = $this->toZodType($desc['type']);
-
-                if ($desc['nullable']) {
-                    $zodType .= '.nullable()';
-                }
-                if (! $desc['required']) {
-                    $zodType .= '.optional()';
-                }
+                $desc['raw_rules'] = $node['__rules'];
+                $zodType = $this->toZodType($desc['type'], $desc);
+                $zodType = $this->applyModifiers($zodType, $desc);
 
                 $lines[] = "{$pad}{$key}: {$zodType},";
 
@@ -36,17 +31,13 @@ class ZodCompiler
             // Array of primitives (tags.* with __item_rules)
             if (isset($node['__item_rules']) && ! isset($node['__items'])) {
                 $itemDesc = $this->mapper->map($node['__item_rules']);
-                $zodItemType = $this->toZodType($itemDesc['type']);
+                $itemDesc['raw_rules'] = $node['__item_rules'];
+                $zodItemType = $this->toZodType($itemDesc['type'], $itemDesc);
 
                 $zodType = "z.array({$zodItemType})";
 
                 $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
-                if ($parentDesc['nullable']) {
-                    $zodType .= '.nullable()';
-                }
-                if (! $parentDesc['required']) {
-                    $zodType .= '.optional()';
-                }
+                $zodType = $this->applyModifiers($zodType, $parentDesc);
 
                 $lines[] = "{$pad}{$key}: {$zodType},";
 
@@ -59,12 +50,7 @@ class ZodCompiler
                 $parentDesc = isset($node['__rules']) ? $this->mapper->map($node['__rules']) : ['required' => false, 'nullable' => false];
 
                 $zodType = "z.array(z.object({\n{$inner}\n{$pad}}))";
-                if ($parentDesc['nullable']) {
-                    $zodType .= '.nullable()';
-                }
-                if (! $parentDesc['required']) {
-                    $zodType .= '.optional()';
-                }
+                $zodType = $this->applyModifiers($zodType, $parentDesc);
 
                 $lines[] = "{$pad}{$key}: {$zodType},";
 
@@ -79,12 +65,7 @@ class ZodCompiler
             $parentDesc = $rulesAtThisLevel ? $this->mapper->map($rulesAtThisLevel) : ['required' => false, 'nullable' => false];
 
             $zodType = "z.object({\n{$inner}\n{$pad}})";
-            if ($parentDesc['nullable']) {
-                $zodType .= '.nullable()';
-            }
-            if (! $parentDesc['required']) {
-                $zodType .= '.optional()';
-            }
+            $zodType = $this->applyModifiers($zodType, $parentDesc);
 
             $lines[] = "{$pad}{$key}: {$zodType},";
         }
@@ -92,12 +73,33 @@ class ZodCompiler
         return implode("\n", $lines);
     }
 
-    protected function toZodType(string $type): string
+    protected function applyModifiers(string $zodType, array $desc): string
+    {
+        $nullable = $desc['nullable'] ?? false;
+        $required = $desc['required'] ?? false;
+        
+        if ($nullable && !$required) {
+            return $zodType . '.nullish()';
+        }
+        
+        if ($nullable) {
+            $zodType .= '.nullable()';
+        }
+        if (!$required) {
+            $zodType .= '.optional()';
+        }
+        
+        return $zodType;
+    }
+
+    protected function toZodType(string $type, array $desc = []): string
     {
         if (str_ends_with($type, '[]')) {
             $base = substr($type, 0, -2);
+            $baseDesc = $desc;
+            $baseDesc['type'] = $base;
 
-            return 'z.array('.$this->toZodType($base).')';
+            return 'z.array('.$this->toZodType($base, $baseDesc).')';
         }
 
         return match ($type) {
@@ -106,38 +108,120 @@ class ZodCompiler
             'boolean' => 'z.boolean()',
             'any', 'unknown' => 'z.any()',
             'File' => 'z.any()',
-            default => $this->handleComplexType($type),
+            default => $this->handleComplexType($type, $desc),
         };
     }
 
-    protected function handleComplexType(string $type): string
+    protected function handleComplexType(string $type, array $desc = []): string
     {
         if (str_contains($type, '|')) {
             $parts = array_map(trim(...), explode('|', $type));
-            $literals = [];
+            $isAllStrings = true;
+            $stringLiterals = [];
+            $zLiterals = [];
+
             foreach ($parts as $part) {
-                // If it's a string literal like 'admin'
                 if (preg_match('/^[\'"](.*)[\'"]$/', $part)) {
-                    $literals[] = "z.literal({$part})";
+                    $stringLiterals[] = $part;
+                    $zLiterals[] = "z.literal({$part})";
                 } elseif (is_numeric($part)) {
-                    $literals[] = "z.literal({$part})";
+                    $isAllStrings = false;
+                    $zLiterals[] = "z.literal({$part})";
+                } elseif ($part === 'null') {
+                    $isAllStrings = false;
+                    $zLiterals[] = "z.literal(null)";
                 } else {
                     return 'z.any()'; // Fallback if mixed
                 }
             }
-            if (count($literals) === 1) {
-                return $literals[0];
+
+            if ($isAllStrings && count($stringLiterals) > 1) {
+                $joined = implode(', ', $stringLiterals);
+                return "z.enum([{$joined}])";
             }
-            $joined = implode(', ', $literals);
+
+            if (count($zLiterals) === 1) {
+                return $zLiterals[0];
+            }
+
+            $joined = implode(', ', $zLiterals);
 
             return "z.union([{$joined}])";
         }
 
         // If it's a PascalCase word, it's likely an Enum reference
         if (preg_match('/^[A-Z]\w*$/', $type)) {
-            return "z.nativeEnum({$type})";
+            $enumValues = null;
+            if (isset($desc['raw_rules'])) {
+                $enumValues = $this->extractEnumValuesFromRules($desc['raw_rules']);
+            }
+
+            if (is_array($enumValues) && count($enumValues) > 0) {
+                $isAllStrings = true;
+                foreach ($enumValues as $val) {
+                    if (!preg_match('/^[\'"](.*)[\'"]$/', $val)) {
+                        $isAllStrings = false;
+                        break;
+                    }
+                }
+                
+                if ($isAllStrings) {
+                    $joined = implode(', ', $enumValues);
+                    return "z.enum([{$joined}])";
+                } else {
+                    $zLiterals = array_map(fn($v) => "z.literal({$v})", $enumValues);
+                    $joined = implode(', ', $zLiterals);
+                    return "z.union([{$joined}])";
+                }
+            }
+            return 'z.any()';
         }
 
         return 'z.any()';
+    }
+
+    protected function extractEnumValuesFromRules(array|string $rules): ?array
+    {
+        if (is_string($rules)) {
+            $rules = explode('|', $rules);
+        }
+
+        foreach ($rules as $rule) {
+            if ($rule instanceof \Illuminate\Validation\Rules\Enum) {
+                $reflectionClass = new \ReflectionClass($rule);
+                if ($reflectionClass->hasProperty('type')) {
+                    $prop = $reflectionClass->getProperty('type');
+                    $enumClass = $prop->getValue($rule);
+                    if (is_string($enumClass) && enum_exists($enumClass)) {
+                        return $this->extractEnumValues($enumClass);
+                    }
+                }
+            } elseif (is_string($rule) && str_starts_with($rule, 'enum:')) {
+                $enumClass = substr($rule, 5);
+                if (enum_exists($enumClass)) {
+                    return $this->extractEnumValues($enumClass);
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    protected function extractEnumValues(string $enumClass): array
+    {
+        $values = [];
+        $reflectionEnum = new \ReflectionEnum($enumClass);
+        foreach ($reflectionEnum->getCases() as $case) {
+            if ($case instanceof \ReflectionEnumBackedCase) {
+                $backingType = $reflectionEnum->getBackingType()?->getName();
+                $val = $case->getBackingValue();
+                $values[] = $backingType === 'string'
+                    ? "'".str_replace("'", "\\'", (string) $val)."'"
+                    : (string) $val;
+            } else {
+                $values[] = "'".$case->getName()."'";
+            }
+        }
+        return $values;
     }
 }

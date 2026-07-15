@@ -15,7 +15,10 @@ class FormRequestGenerator
         protected RuleToTypeMapper $mapper,
         protected RuleTree $tree,
         protected array $config,
-    ) {}
+        protected ?ZodCompiler $zodCompiler = null,
+    ) {
+        $this->zodCompiler = $zodCompiler ?? new ZodCompiler($this->mapper);
+    }
 
     public function generate(string $requestClass): string
     {
@@ -38,8 +41,7 @@ class FormRequestGenerator
         $output = "export interface {$name} {\n{$body}\n}";
 
         if ($this->config['output']['zod'] ?? false) {
-            $zodCompiler = new ZodCompiler($this->mapper);
-            $zodBody = $zodCompiler->compile($tree, indent: 2);
+            $zodBody = $this->zodCompiler->compile($tree, indent: 2);
             $output .= "\n\nexport const {$name}Schema = z.object({\n{$zodBody}\n});";
         }
 

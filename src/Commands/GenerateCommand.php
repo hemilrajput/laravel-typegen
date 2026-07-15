@@ -146,6 +146,7 @@ class GenerateCommand extends Command
         }
 
         // Process Form Requests
+        $hasZodSchema = false;
         if ($requests !== []) {
             $formRequestGenerator = new FormRequestGenerator(
                 new RuleToTypeMapper,
@@ -156,9 +157,15 @@ class GenerateCommand extends Command
                 if ($isVerbose) {
                     $this->line("  ✓ request {$request}");
                 }
+                
+                $content = $formRequestGenerator->generate($request);
+                if (str_contains($content, 'z.object(') || str_contains($content, 'z.any(')) {
+                    $hasZodSchema = true;
+                }
+                
                 $blocks[] = [
                     'category' => 'Requests',
-                    'content' => $formRequestGenerator->generate($request),
+                    'content' => $content,
                 ];
                 if ($bar) {
                     $bar->advance();
@@ -240,7 +247,7 @@ class GenerateCommand extends Command
             ]);
         }
 
-        if ($requests !== [] && ($config['output']['zod'] ?? false)) {
+        if ($hasZodSchema && ($config['output']['zod'] ?? false)) {
             array_unshift($allBlocks, [
                 'category' => 'Imports',
                 'content' => "import { z } from 'zod';",
