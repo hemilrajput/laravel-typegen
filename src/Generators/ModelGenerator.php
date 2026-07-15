@@ -34,7 +34,12 @@ class ModelGenerator
 
         $allLines = [];
         foreach ($fields as $field => $type) {
-            $allLines[] = "  {$field}: {$type};";
+            if (str_starts_with($type, 'readonly ')) {
+                $type = substr($type, 9);
+                $allLines[] = "  readonly {$field}: {$type};";
+            } else {
+                $allLines[] = "  {$field}: {$type};";
+            }
         }
         foreach ($relationResult['fields'] as $field => $type) {
             $allLines[] = "  {$field}?: {$type};";
