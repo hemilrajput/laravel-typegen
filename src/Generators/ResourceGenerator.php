@@ -56,7 +56,7 @@ class ResourceGenerator
                 if (function_exists('app')) {
                     try {
                         $appNamespace = app()->getNamespace();
-                    } catch (\Throwable $e) {
+                    } catch (\Throwable) {
                         // ignore
                     }
                 }
