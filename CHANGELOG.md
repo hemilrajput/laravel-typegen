@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-07-15
+
+### Added
+- **Zod Schema Compilation**: Automatically generate matching Zod validation schemas for Laravel FormRequests to validate data on the client side before submission.
+- **Inertia Recipe**: Added comprehensive documentation for Inertia.js integration.
+
+### Fixed
+- Fixed an issue where `readonly` modifiers were incorrectly placed after the property name causing TypeScript compilation errors (TS1354).
+- Fixed Laravel 11 backwards compatibility with `app()->getNamespace()`.
+- Fixed missing `configure-pages` step in GitHub Actions preventing proper documentation deployment.
+
 ## [2.2.1] - 2026-07-12
 
 ### Fixed
@@ -130,6 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
 
+[2.2.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.1.0...v2.1.1
