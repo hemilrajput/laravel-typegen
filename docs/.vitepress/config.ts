@@ -80,7 +80,7 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024 Hemil Rajput',
+      copyright: `Copyright © 2024-${new Date().getFullYear()} Hemil Rajput`,
     },
 
     docFooter: {
