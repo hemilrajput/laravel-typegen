@@ -21,16 +21,30 @@ export type RouteName =
 
 export type RouteParams<T extends RouteName> =
   T extends 'users.index' ? {} :
-  T extends 'users.show' ? { user: string | number } :
+  T extends 'users.show' ? { user: number } :
   never;
 ```
+
+### Strict Parameter Typing
+TypeGen automatically inspects route signatures (controllers or closures) to resolve parameter types. If a route parameter binds to an Eloquent model (e.g. `User $user`), TypeGen instantiates the model and inspects its `getKeyType()`. Auto-incrementing IDs become `number`, and UUIDs become `string` natively.
 
 ### Optional Parameters
 If a route contains an optional parameter (like `{comment?}`), it will be marked optional (`?`) in TS:
 
 ```typescript
-T extends 'posts.comments' ? { post: string | number; comment?: string | number } :
+T extends 'posts.comments' ? { post: number; comment?: number } :
 ```
+
+---
+
+## CI / CD Safety Gates
+To prevent stale types from being merged into your repository, TypeGen provides a `--check` flag:
+
+```bash
+php artisan typescript:generate --check
+```
+
+Instead of writing to disk, this performs an in-memory generation and precisely compares the output against your existing physical files (supporting both single-file and split-mode). If the generated types differ, the command fails with exit code `1`. You can easily add this to your GitHub Actions pipeline to enforce type synchronization!
 
 ---
 

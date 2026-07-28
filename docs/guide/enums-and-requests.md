@@ -1,4 +1,4 @@
-# Enums & Form Requests
+# Enums, Requests & Resources
 
 TypeScript types for validation payloads and status enums are generated automatically alongside your models.
 
@@ -100,3 +100,44 @@ export interface StorePostRequest {
     qty: number;
   }[]
   ```
+
+### Zod Schemas & Advanced Constraints
+If you enable Zod schema generation (`'zod' => true` in config), TypeGen will emit Zod schemas alongside your interfaces for runtime client-side validation.
+
+TypeGen extracts advanced validation constraints from your rules to build powerful schemas:
+- `email` generates `.email()`
+- `min:x` generates `.min(x)`
+- `max:x` generates `.max(x)`
+- Array constraints like `min:1` generate `.min(1)`
+
+---
+
+## API Resources
+
+Laravel TypeGen supports generating highly accurate interfaces for your `JsonResource` and `ResourceCollection` classes using advanced AST parsing.
+
+```php
+use Illuminate\Http\Resources\Json\JsonResource;
+use Hemilrajput\TypeGen\Attributes\TypeScript;
+
+#[TypeScript]
+class UserResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->when($request->user()->isAdmin(), $this->email),
+            'posts' => PostResource::collection($this->whenLoaded('posts')),
+        ];
+    }
+}
+```
+
+### Advanced AST Parsing
+
+Instead of relying on fragile `@property` docblocks, TypeGen uses `nikic/php-parser` to statically analyze your `toArray()` method's Abstract Syntax Tree (AST):
+- Types are inferred dynamically from the properties accessed (e.g. `$this->id`).
+- Conditional fields wrapped in `$this->when()` or `$this->whenLoaded()` are automatically marked as optional (`?`) in the generated TypeScript.
+- Nested resources (`PostResource::collection(...)` or `new PostResource(...)`) correctly link to their respective TypeScript interfaces.

@@ -21,7 +21,7 @@ export default defineConfig({
         text: 'Core Features',
         items: [
           { text: 'Eloquent Models', link: '/guide/models' },
-          { text: 'Enums & Form Requests', link: '/guide/enums-and-requests' },
+          { text: 'Enums, Requests & Resources', link: '/guide/enums-and-requests' },
           { text: 'Route Parameters & DX', link: '/guide/routes-and-dx' },
         ]
       },

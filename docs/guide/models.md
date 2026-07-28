@@ -28,6 +28,13 @@ export interface AdminUser { ... }
 
 Attributes listed in `$hidden` are omitted from the generated TS interface by default. You can change this behavior in `config/typegen.php` by setting `'include_hidden' => true`.
 
+## Appended Attributes & Accessors
+
+If you append attributes using `$appends`, TypeGen will automatically include them. It performs deep reflection to infer the exact return type:
+
+- **Legacy Accessors**: Methods like `public function getIsAdminAttribute(): bool` correctly yield `isAdmin: boolean`.
+- **Modern Accessors**: Laravel 9+ `Attribute::make()` getters are also fully supported. TypeGen evaluates the underlying closure signature to extract the precise return type instead of defaulting to `any`.
+
 ## Relationships
 
 TypeGen supports auto-generation of Eloquent relationships. You must explicitly opt-in to relations on each model using the `includeRelations` parameter:
