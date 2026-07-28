@@ -14,11 +14,7 @@ export default defineConfig({
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
   ],
   themeConfig: {
-    logo: {
-      light: '/logo-light.svg',
-      dark: '/logo-dark.svg',
-      alt: 'Laravel TypeGen',
-    },
+    logo: '/logo.svg',
     siteTitle: 'Laravel TypeGen',
 
     nav: [

@@ -138,41 +138,43 @@ onMounted(() => {
 
       <!-- Right: code window -->
       <div class="hero-visual">
-        <div class="code-window">
-          <div class="window-chrome">
-            <span class="dot dot-red" />
-            <span class="dot dot-yellow" />
-            <span class="dot dot-green" />
-            <span class="window-title">generated.ts</span>
-          </div>
-          <div class="code-body">
-            <div
-              v-for="(line, i) in lines"
-              :key="i"
-              class="code-line"
-              :class="{ 'line-highlight': line.highlight }"
-            >
-              <span class="line-num">{{ i + 1 }}</span>
-              <span class="line-content">
-                <template v-for="(tok, j) in line.tokens" :key="j">
-                  <span :style="{ color: tok.color }">{{ tok.text }}</span>
-                </template>
-                <span v-if="i === lines.length - 1" class="cursor" />
-              </span>
+        <div class="code-wrapper">
+          <div class="code-window">
+            <div class="window-chrome">
+              <span class="dot dot-red" />
+              <span class="dot dot-yellow" />
+              <span class="dot dot-green" />
+              <span class="window-title">generated.ts</span>
             </div>
+            <div class="code-body">
+              <div
+                v-for="(line, i) in lines"
+                :key="i"
+                class="code-line"
+                :class="{ 'line-highlight': line.highlight }"
+              >
+                <span class="line-num">{{ i + 1 }}</span>
+                <span class="line-content">
+                  <template v-for="(tok, j) in line.tokens" :key="j">
+                    <span :style="{ color: tok.color }">{{ tok.text }}</span>
+                  </template>
+                  <span v-if="i === lines.length - 1" class="cursor" />
+                </span>
+              </div>
+            </div>
+            <!-- Bottom glow -->
+            <div class="window-glow" aria-hidden="true" />
           </div>
-          <!-- Bottom glow -->
-          <div class="window-glow" aria-hidden="true" />
-        </div>
 
-        <!-- Floating badges -->
-        <div class="float-badge badge-top">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1,9 4,5 7,7 10,3 13,6" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          54 tests passing
-        </div>
-        <div class="float-badge badge-bottom">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#3178C6" stroke-width="1.2"/><path d="M5 7l1.5 1.5L9 5" stroke="#3178C6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Zero config
+          <!-- Floating badges -->
+          <div class="float-badge badge-top">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="1,9 4,5 7,7 10,3 13,6" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            54 tests passing
+          </div>
+          <div class="float-badge badge-bottom">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#3178C6" stroke-width="1.2"/><path d="M5 7l1.5 1.5L9 5" stroke="#3178C6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Zero config
+          </div>
         </div>
       </div>
     </div>
@@ -413,10 +415,17 @@ onMounted(() => {
 
 /* ── Code window ────────────────────────────────────────────── */
 .hero-visual {
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+}
+
+.code-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
 }
 
 .code-window {
@@ -430,7 +439,6 @@ onMounted(() => {
     0 8px 24px rgba(0,0,0,0.40);
   overflow: hidden;
   width: 100%;
-  max-width: 460px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   animation: float-window 7s ease-in-out infinite;
 }

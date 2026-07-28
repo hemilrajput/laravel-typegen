@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Red Laravel bracket on the left -->
+  <path d="M11 7H7V25H11" stroke="#FF2D20" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Blue TypeScript brace on the right -->
+  <path d="M21 7H25V25H21" stroke="#3178C6" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Inner lightning or connection node -->
+  <path d="M13 19L19 13" stroke="#FF6B35" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="13" cy="19" r="2" fill="#FF2D20"/>
+  <circle cx="19" cy="13" r="2" fill="#3178C6"/>
+</svg>
