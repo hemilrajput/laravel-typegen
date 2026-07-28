@@ -22,7 +22,8 @@ class GenerateCommand extends Command
 {
     protected $signature = 'typescript:generate
                             {--dry-run : Print output instead of writing}
-                            {--watch : Keep running and watch for file changes}';
+                            {--watch : Keep running and watch for file changes}
+                            {--check : Check if the generated types match the existing file (useful for CI)}';
 
     protected $description = 'Generate TypeScript types from Laravel models, enums, and form requests.';
 
@@ -271,6 +272,18 @@ class GenerateCommand extends Command
             $this->line("\n".implode("\n\n", array_column($allBlocks, 'content')));
 
             return self::SUCCESS;
+        }
+
+        if ($this->option('check')) {
+            if ($writer->check($allBlocks)) {
+                $this->info("\nTypes are up to date.");
+
+                return self::SUCCESS;
+            } else {
+                $this->error("\nGenerated types do not match the existing file(s). Please run 'php artisan typescript:generate' and commit the changes.");
+
+                return self::FAILURE;
+            }
         }
 
         $path = $writer->write($allBlocks);

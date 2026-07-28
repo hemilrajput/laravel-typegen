@@ -75,7 +75,7 @@ it('generates zod schemas when configured', function (): void {
     expect($contents)
         ->toContain("import { z } from 'zod';")
         ->toContain('export const StorePostRequestSchema = z.object({')
-        ->toContain('title: z.string(),')
+        ->toContain('title: z.string().max(120),')
         ->toContain('author: z.object({')
         ->toContain('name: z.string(),');
 
@@ -388,3 +388,31 @@ it('generates valid typescript that compiles', function (): void {
 
     @unlink($outputPath);
 })->skip(fn (): bool => false, 'npx is not installed');
+
+it('fails in check mode if files do not match', function (): void {
+    $outputPath = sys_get_temp_dir().'/check_fail.ts';
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    config()->set('typegen.output.path', $outputPath);
+
+    file_put_contents($outputPath, 'random content');
+
+    $this->artisan('typescript:generate', ['--check' => true])
+        ->assertFailed()
+        ->expectsOutputToContain('Generated types do not match the existing file(s)');
+
+    @unlink($outputPath);
+});
+
+it('succeeds in check mode if files match', function (): void {
+    $outputPath = sys_get_temp_dir().'/check_pass.ts';
+    config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
+    config()->set('typegen.output.path', $outputPath);
+
+    $this->artisan('typescript:generate')->assertSuccessful();
+
+    $this->artisan('typescript:generate', ['--check' => true])
+        ->assertSuccessful()
+        ->expectsOutputToContain('Types are up to date');
+
+    @unlink($outputPath);
+});

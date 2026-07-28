@@ -152,9 +152,34 @@ class ModelGenerator
 
             $inferred = 'any';
             $studly = Str::studly($appended);
-            $methodName = "get{$studly}Attribute";
 
-            if (method_exists($model, $methodName)) {
+            // Modern Accessors (Attribute::make)
+            $modernMethodName = Str::camel($appended);
+            if (method_exists($model, $modernMethodName)) {
+                $rm = new \ReflectionMethod($model, $modernMethodName);
+                $rt = $rm->getReturnType();
+                if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === 'Illuminate\Database\Eloquent\Casts\Attribute') {
+                    try {
+                        $attribute = $model->{$modernMethodName}();
+                        if ($attribute->get) {
+                            $closureReflection = new \ReflectionFunction($attribute->get);
+                            $closureRt = $closureReflection->getReturnType();
+                            if ($closureRt instanceof \ReflectionNamedType) {
+                                $inferred = $this->dbTypeToTypeScript($closureRt->getName());
+                                if ($closureRt->allowsNull()) {
+                                    $inferred .= ' | null';
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore errors invoking the accessor during static analysis
+                    }
+                }
+            }
+
+            // Legacy Accessors (getXAttribute)
+            $methodName = "get{$studly}Attribute";
+            if ($inferred === 'any' && method_exists($model, $methodName)) {
                 $rm = new \ReflectionMethod($model, $methodName);
                 $rt = $rm->getReturnType();
                 if ($rt instanceof \ReflectionNamedType) {

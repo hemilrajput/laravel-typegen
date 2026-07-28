@@ -74,6 +74,44 @@ class ZodCompiler
 
     protected function applyModifiers(string $zodType, array $desc): string
     {
+        $constraints = $desc['constraints'] ?? [];
+
+        if (isset($constraints['min'])) {
+            $zodType .= '.min('.$constraints['min'].')';
+        }
+        if (isset($constraints['max'])) {
+            $zodType .= '.max('.$constraints['max'].')';
+        }
+        if (isset($constraints['length'])) {
+            $zodType .= '.length('.$constraints['length'].')';
+        }
+        if (isset($constraints['size'])) {
+            $zodType .= '.length('.$constraints['size'].')';
+        }
+        if (isset($constraints['email'])) {
+            $zodType .= '.email()';
+        }
+        if (isset($constraints['url'])) {
+            $zodType .= '.url()';
+        }
+        if (isset($constraints['uuid'])) {
+            $zodType .= '.uuid()';
+        }
+        if (isset($constraints['ulid'])) {
+            $zodType .= '.ulid()';
+        }
+        if (isset($constraints['ip']) || isset($constraints['ipv4']) || isset($constraints['ipv6'])) {
+            $zodType .= '.ip()';
+        }
+        if (isset($constraints['regex'])) {
+            $regex = $constraints['regex'];
+            if (str_starts_with($regex, '/') && str_ends_with($regex, '/')) {
+                $zodType .= '.regex('.$regex.')';
+            } else {
+                $zodType .= '.regex(new RegExp(\''.addslashes($regex).'\'))';
+            }
+        }
+
         $nullable = $desc['nullable'] ?? false;
         $required = $desc['required'] ?? false;
 

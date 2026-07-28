@@ -1,5 +1,6 @@
 <?php
 
+use Hemilrajput\TypeGen\Tests\Fixtures\Models\User;
 use Hemilrajput\TypeGen\Tests\TestCase;
 use Illuminate\Support\Facades\Route;
 
@@ -43,4 +44,22 @@ it('respects the --dry-run flag for routes', function (): void {
         ->assertSuccessful();
 
     expect(file_exists($outputPath))->toBeFalse();
+});
+
+it('infers route parameter types from bound Eloquent models', function (): void {
+    Route::get('/users/{user}', function (User $user) {
+        return 'show';
+    })->name('users.show');
+
+    $outputPath = sys_get_temp_dir().'/routes_models.ts';
+    config()->set('typegen.output.routes_path', $outputPath);
+
+    $this->artisan('typescript:routes')->assertSuccessful();
+
+    $contents = file_get_contents($outputPath);
+
+    // User model has integer primary key, so user should be 'number'
+    expect($contents)->toContain("T extends 'users.show' ? { user: number } :");
+
+    @unlink($outputPath);
 });

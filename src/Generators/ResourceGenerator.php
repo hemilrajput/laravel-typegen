@@ -3,6 +3,19 @@
 namespace Hemilrajput\TypeGen\Generators;
 
 use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Scanners\ResourceAstVisitor;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
+use PhpParser\NodeTraverser;
+use PhpParser\ParserFactory;
 use ReflectionClass;
 
 class ResourceGenerator
@@ -34,6 +47,13 @@ class ResourceGenerator
     /** @return array<string,string> */
     protected function collectFields(string $resourceClass, ReflectionClass $reflectionClass): array
     {
+        if (class_exists('\PhpParser\ParserFactory')) {
+            $astFields = $this->collectFieldsFromAst($resourceClass, $reflectionClass);
+            if ($astFields !== []) {
+                return $astFields;
+            }
+        }
+
         $fields = [];
         $docComment = $reflectionClass->getDocComment();
 
@@ -48,51 +68,198 @@ class ResourceGenerator
 
         // Fallback to matching model if no properties are defined via PHPDoc
         if ($fields === []) {
-            $baseName = $reflectionClass->getShortName();
-            if (str_ends_with($baseName, 'Resource')) {
-                $modelName = substr($baseName, 0, -8);
-                $modelClass = null;
-                $appNamespace = 'App\\';
-                if (function_exists('app')) {
-                    try {
-                        $appNamespace = app()->getNamespace();
-                    } catch (\Throwable) {
-                        // ignore
-                    }
+            $modelClass = $this->guessModelClass($reflectionClass);
+            if ($modelClass) {
+                $instance = new $modelClass;
+                // Primary key
+                $fields[$instance->getKeyName()] = $instance->getKeyType() === 'int' ? 'number' : 'string';
+                // Casts
+                foreach ($instance->getCasts() as $attr => $cast) {
+                    $fields[$attr] = $this->mapper->toTypeScript($cast);
                 }
-                $possibleClasses = [
-                    $appNamespace."Models\\{$modelName}",
-                    $appNamespace.$modelName,
-                    "App\\Models\\{$modelName}",
-                    "App\\{$modelName}",
-                    "hemilrajput\\TypeGen\\Tests\\Fixtures\\Models\\{$modelName}", // for test environment
-                ];
-                foreach ($possibleClasses as $possibleClass) {
-                    if (class_exists($possibleClass)) {
-                        $modelClass = $possibleClass;
-                        break;
-                    }
-                }
-
-                if ($modelClass) {
-                    $instance = new $modelClass;
-                    // Primary key
-                    $fields[$instance->getKeyName()] = $instance->getKeyType() === 'int' ? 'number' : 'string';
-                    // Casts
-                    foreach ($instance->getCasts() as $attr => $cast) {
-                        $fields[$attr] = $this->mapper->toTypeScript($cast);
-                    }
-                    // Fillable
-                    foreach ($instance->getFillable() as $attr) {
-                        if (! isset($fields[$attr])) {
-                            $fields[$attr] = 'string';
-                        }
+                // Fillable
+                foreach ($instance->getFillable() as $attr) {
+                    if (! isset($fields[$attr])) {
+                        $fields[$attr] = 'string';
                     }
                 }
             }
         }
 
         return $fields;
+    }
+
+    protected function collectFieldsFromAst(string $resourceClass, ReflectionClass $reflectionClass): array
+    {
+        $fileName = $reflectionClass->getFileName();
+        if (! $fileName || ! file_exists($fileName)) {
+            return [];
+        }
+
+        if (! $reflectionClass->hasMethod('toArray')) {
+            return [];
+        }
+
+        if ($reflectionClass->getMethod('toArray')->getDeclaringClass()->getName() !== $resourceClass) {
+            return [];
+        }
+
+        try {
+            $code = file_get_contents($fileName);
+            $parser = (new ParserFactory)->createForNewestSupportedVersion();
+            $ast = $parser->parse($code);
+
+            $visitor = new ResourceAstVisitor;
+            $traverser = new NodeTraverser;
+            $traverser->addVisitor($visitor);
+            $traverser->traverse($ast);
+
+            if (! $visitor->toArrayReturn) {
+                return [];
+            }
+
+            return $this->parseArrayNode($visitor->toArrayReturn, $reflectionClass);
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    protected function parseArrayNode(Array_ $arrayNode, ReflectionClass $resourceReflection): array
+    {
+        $fields = [];
+        foreach ($arrayNode->items as $item) {
+            /** @phpstan-ignore-next-line */
+            if (! $item || ! $item->key instanceof String_) {
+                continue;
+            }
+            $key = $item->key->value;
+
+            if ($this->isOptional($item->value)) {
+                $key .= '?';
+            }
+
+            $fields[$key] = $this->inferTypeFromExpr($item->value, $resourceReflection);
+        }
+
+        return $fields;
+    }
+
+    protected function isOptional(Expr $expr): bool
+    {
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this') {
+            if ($expr->name instanceof Identifier && in_array($expr->name->toString(), ['when', 'whenLoaded', 'mergeWhen'])) {
+                return true;
+            }
+        }
+        if ($expr instanceof StaticCall) {
+            foreach ($expr->args as $arg) {
+                if ($this->isOptional($arg->value)) {
+                    return true;
+                }
+            }
+        }
+        if ($expr instanceof New_) {
+            foreach ($expr->args as $arg) {
+                if ($this->isOptional($arg->value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected function inferTypeFromExpr(Expr $expr, ReflectionClass $resourceReflection): string
+    {
+        if ($expr instanceof StaticCall && $expr->class instanceof Name && $expr->name instanceof Identifier) {
+            if ($expr->name->toString() === 'collection') {
+                return $expr->class->getLast().'[]';
+            }
+        }
+
+        if ($expr instanceof New_ && $expr->class instanceof Name) {
+            return $expr->class->getLast();
+        }
+
+        if ($expr instanceof PropertyFetch && $expr->var instanceof Variable && $expr->var->name === 'this') {
+            if ($expr->name instanceof Identifier) {
+                return $this->inferPropertyTypeFromModel($expr->name->toString(), $resourceReflection);
+            }
+        }
+
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this') {
+            if ($expr->name instanceof Identifier && $expr->name->toString() === 'whenLoaded') {
+                // Try to guess relation type if possible? Default to any array for now
+                return 'any';
+            }
+        }
+
+        return 'any';
+    }
+
+    protected function inferPropertyTypeFromModel(string $propName, ReflectionClass $resourceReflection): string
+    {
+        $modelClass = $this->guessModelClass($resourceReflection);
+        if ($modelClass) {
+            try {
+                $instance = new $modelClass;
+
+                $casts = $instance->getCasts();
+                if (isset($casts[$propName])) {
+                    return $this->mapper->toTypeScript($casts[$propName]);
+                }
+
+                if ($instance->getKeyName() === $propName) {
+                    return $instance->getKeyType() === 'int' ? 'number' : 'string';
+                }
+
+                if (in_array($propName, $instance->getDates())) {
+                    return 'string';
+                }
+
+                // If not casted, assume string for safety unless it's a known boolean/number from schema?
+                // For now, fallback to any if we can't be sure, or string.
+                return 'any';
+            } catch (\Throwable) {
+                // ignore
+            }
+        }
+
+        return 'any';
+    }
+
+    protected function guessModelClass(ReflectionClass $reflectionClass): ?string
+    {
+        $baseName = $reflectionClass->getShortName();
+        if (! str_ends_with($baseName, 'Resource')) {
+            return null;
+        }
+
+        $modelName = substr($baseName, 0, -8);
+        $appNamespace = 'App\\';
+
+        if (function_exists('app')) {
+            try {
+                $appNamespace = app()->getNamespace();
+            } catch (\Throwable) {
+            }
+        }
+
+        $possibleClasses = [
+            $appNamespace."Models\\{$modelName}",
+            $appNamespace.$modelName,
+            "App\\Models\\{$modelName}",
+            "App\\{$modelName}",
+            "Hemilrajput\\TypeGen\\Tests\\Fixtures\\Models\\{$modelName}",
+        ];
+
+        foreach ($possibleClasses as $possibleClass) {
+            if (class_exists($possibleClass)) {
+                return $possibleClass;
+            }
+        }
+
+        return null;
     }
 
     protected function parsePhpDocType(string $type): string
@@ -125,7 +292,6 @@ class ResourceGenerator
                 default => 'any',
             };
 
-            // If it matches a resource or model name, we keep its short name
             if ($mapped === 'any' && preg_match('/^[A-Z]\w+$/', trim($t))) {
                 $mapped = trim($t);
             }

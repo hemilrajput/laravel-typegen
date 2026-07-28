@@ -11,9 +11,6 @@ class TypeScriptSplitWriter
     public function write(array $blocks): string
     {
         $path = $this->config['output']['path'];
-        $banner = $this->config['output']['banner'] ?? '';
-
-        // Determine output directory: strip .ts extension from the output path and make it a folder
         $dir = dirname((string) $path).'/'.pathinfo((string) $path, PATHINFO_FILENAME);
 
         if (! $this->isSafePath($dir)) {
@@ -21,7 +18,6 @@ class TypeScriptSplitWriter
         }
 
         if (is_dir($dir)) {
-            // Clean up old files/directories recursively
             $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
                 \RecursiveIteratorIterator::CHILD_FIRST
@@ -37,7 +33,57 @@ class TypeScriptSplitWriter
             @mkdir($dir, 0755, recursive: true);
         }
 
-        // Map blocks to their defined type names and categories
+        $files = $this->buildFiles($blocks);
+        foreach ($files as $filePath => $content) {
+            $fullPath = "{$dir}/{$filePath}";
+            $catDir = dirname($fullPath);
+            @mkdir($catDir, 0755, recursive: true);
+            file_put_contents($fullPath, $content);
+        }
+
+        return $dir;
+    }
+
+    public function check(array $blocks): bool
+    {
+        $path = $this->config['output']['path'];
+        $dir = dirname((string) $path).'/'.pathinfo((string) $path, PATHINFO_FILENAME);
+
+        if (! is_dir($dir)) {
+            return false;
+        }
+
+        $files = $this->buildFiles($blocks);
+
+        // Check if all generated files match disk
+        foreach ($files as $filePath => $content) {
+            $fullPath = "{$dir}/{$filePath}";
+            if (! file_exists($fullPath) || file_get_contents($fullPath) !== $content) {
+                return false;
+            }
+        }
+
+        // Check if there are extra files on disk
+        $diskFiles = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if ($file->isFile() && $file->getExtension() === 'ts') {
+                $relPath = str_replace('\\', '/', substr($file->getRealPath(), strlen(realpath($dir)) + 1));
+                if (! isset($files[$relPath])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /** @return array<string,string> */
+    protected function buildFiles(array $blocks): array
+    {
+        $banner = $this->config['output']['banner'] ?? '';
         $typeMap = [];
 
         foreach ($blocks as $block) {
@@ -51,8 +97,8 @@ class TypeScriptSplitWriter
         }
 
         $categories = [];
+        $files = [];
 
-        // Write each type file with resolved imports
         foreach ($typeMap as $typeName => $info) {
             $myCat = $info['category'];
             $myContent = $info['content'];
@@ -63,7 +109,6 @@ class TypeScriptSplitWriter
                     continue;
                 }
 
-                // Match type usage contexts (e.g. `: Type`, `<Type>`, `| Type`, `extends Type`)
                 if (preg_match('/(?:[:<|&]\s*(?:readonly\s+)?|extends\s+|implements\s+|type\s+\w+\s*=\s*)\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
                     $otherCat = $otherInfo['category'];
                     if ($myCat === $otherCat) {
@@ -80,32 +125,25 @@ class TypeScriptSplitWriter
             }
             $fileContent .= $myContent."\n";
 
-            $catDir = $dir.'/'.$myCat;
-            @mkdir($catDir, 0755, recursive: true);
-            file_put_contents("{$catDir}/{$typeName}.ts", $fileContent);
-
+            $files["{$myCat}/{$typeName}.ts"] = $fileContent;
             $categories[$myCat][] = $typeName;
         }
 
-        // Write barrel index.ts files for each category
         foreach ($categories as $cat => $types) {
             $indexLines = [$banner];
             foreach ($types as $type) {
                 $indexLines[] = "export * from './{$type}';";
             }
-            $indexContent = implode("\n", $indexLines)."\n";
-            file_put_contents("{$dir}/{$cat}/index.ts", $indexContent);
+            $files["{$cat}/index.ts"] = implode("\n", $indexLines)."\n";
         }
 
-        // Write root barrel index.ts
         $rootLines = [$banner];
         foreach (array_keys($categories) as $cat) {
             $rootLines[] = "export * from './{$cat}';";
         }
-        $rootContent = implode("\n", $rootLines)."\n";
-        file_put_contents("{$dir}/index.ts", $rootContent);
+        $files['index.ts'] = implode("\n", $rootLines)."\n";
 
-        return $dir;
+        return $files;
     }
 
     protected function isSafePath(string $path): bool

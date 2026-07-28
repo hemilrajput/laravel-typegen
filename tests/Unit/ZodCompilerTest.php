@@ -110,3 +110,13 @@ it('compiles sometimes to .optional() and nullable to .nullish()', function (): 
     expect($zod)->toContain('status: z.string().optional(),');
     expect($zod)->toContain('age: z.number().nullish(),');
 });
+it('compiles Zod string constraints', function (): void {
+    $tree = (new RuleTree)->build([
+        'email' => ['required', 'string', 'email', 'min:8', 'max:255', 'regex:/^[a-z]+$/'],
+    ]);
+
+    $compiler = new ZodCompiler(new RuleToTypeMapper);
+    $zod = $compiler->compile($tree, 2);
+
+    expect($zod)->toContain('email: z.string().min(8).max(255).email().regex(/^[a-z]+$/),');
+});

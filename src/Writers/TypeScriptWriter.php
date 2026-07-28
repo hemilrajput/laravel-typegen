@@ -8,14 +8,10 @@ class TypeScriptWriter
 {
     public function __construct(protected array $config) {}
 
-    /** @param  array<string>  $blocks  rendered interface/type blocks */
     public function write(array $blocks): string
     {
         $path = $this->config['output']['path'];
-        $banner = $this->config['output']['banner'] ?? '';
-
-        $contents = array_column($blocks, 'content');
-        $fileContent = $banner."\n".implode("\n\n", $contents)."\n";
+        $fileContent = $this->buildContent($blocks);
 
         $dir = dirname((string) $path);
 
@@ -27,6 +23,24 @@ class TypeScriptWriter
         file_put_contents($path, $fileContent);
 
         return $path;
+    }
+
+    public function check(array $blocks): bool
+    {
+        $path = $this->config['output']['path'];
+        if (! file_exists($path)) {
+            return false;
+        }
+
+        return file_get_contents($path) === $this->buildContent($blocks);
+    }
+
+    protected function buildContent(array $blocks): string
+    {
+        $banner = $this->config['output']['banner'] ?? '';
+        $contents = array_column($blocks, 'content');
+
+        return $banner."\n".implode("\n\n", $contents)."\n";
     }
 
     protected function isSafePath(string $path): bool

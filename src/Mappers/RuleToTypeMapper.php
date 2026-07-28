@@ -19,6 +19,7 @@ class RuleToTypeMapper
         $nullable = false;
         $isArray = false;
         $enumClass = null;
+        $constraints = [];
 
         foreach ($tokens as $token) {
             // Object rules (Enum, In, Rule::in(...), etc.)
@@ -33,6 +34,14 @@ class RuleToTypeMapper
             }
 
             [$name, $arg] = $this->parseToken($token);
+
+            if (in_array($name, ['email', 'url', 'uuid', 'ulid', 'ip', 'ipv4', 'ipv6'])) {
+                $constraints[$name] = true;
+            } elseif (in_array($name, ['min', 'max', 'length', 'size']) && $arg !== null && is_numeric($arg)) {
+                $constraints[$name] = (float) $arg;
+            } elseif ($name === 'regex' && $arg !== null) {
+                $constraints['regex'] = $arg;
+            }
 
             match (true) {
                 $name === 'required' => $required = true,
@@ -60,6 +69,7 @@ class RuleToTypeMapper
             'required' => $required && ! $nullable,
             'nullable' => $nullable,
             'enum_class' => $enumClass,
+            'constraints' => $constraints,
         ];
     }
 

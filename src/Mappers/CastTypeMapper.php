@@ -2,6 +2,11 @@
 
 namespace Hemilrajput\TypeGen\Mappers;
 
+use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
+use Illuminate\Database\Eloquent\Casts\AsCollection;
+use Illuminate\Database\Eloquent\Casts\AsStringable;
+
 class CastTypeMapper
 {
     /** @var array<string,string> */
@@ -34,10 +39,45 @@ class CastTypeMapper
                 return (new \ReflectionClass($base))->getShortName();
             }
 
+            // Check if it's a native Laravel cast
+            if (is_a($base, AsCollection::class, true)) {
+                return 'any[]';
+            }
+            if (is_a($base, AsArrayObject::class, true)) {
+                return 'Record<string, unknown>';
+            }
+            if (is_a($base, AsStringable::class, true)) {
+                return 'string';
+            }
+
+            // Inspect custom CastsAttributes
+            if (is_a($base, CastsAttributes::class, true)) {
+                try {
+                    $reflection = new \ReflectionMethod($base, 'get');
+                    $returnType = $reflection->getReturnType();
+                    if ($returnType instanceof \ReflectionNamedType) {
+                        return $this->phpTypeToTypeScript($returnType->getName());
+                    }
+                } catch (\ReflectionException $e) {
+                    // fall back
+                }
+            }
+
             return 'unknown';
         }
 
         return 'unknown';
+    }
+
+    protected function phpTypeToTypeScript(string $type): string
+    {
+        return match (strtolower($type)) {
+            'int', 'integer', 'float', 'double' => 'number',
+            'string' => 'string',
+            'bool', 'boolean' => 'boolean',
+            'array' => 'any[]',
+            default => 'unknown',
+        };
     }
 
     /** @return array<string,string> */

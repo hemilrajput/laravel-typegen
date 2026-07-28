@@ -35,3 +35,16 @@ it('handles array of rules with objects', function (): void {
     expect($this->mapper->map(['required', $rule]))
         ->toMatchArray(['type' => "'a' | 'b'", 'required' => true]);
 });
+it('extracts constraints from rules', function (): void {
+    expect($this->mapper->map('required|string|min:8|max:255|email|regex:/^[a-z]+$/'))
+        ->toMatchArray([
+            'type' => 'string',
+            'required' => true,
+            'constraints' => [
+                'min' => 8,
+                'max' => 255,
+                'email' => true,
+                'regex' => '/^[a-z]+$/',
+            ],
+        ]);
+});

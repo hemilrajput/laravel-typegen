@@ -40,7 +40,11 @@ export interface User {
 ## 🚀 Features
 - **Eloquent Models**: Generates interfaces from `$fillable`, `$casts`, and timestamps.
 - **Enums**: Generates union types from backed and pure PHP enums.
-- **FormRequests**: Generates request DTOs from your `rules()` method.
+- **FormRequests & Zod**: Generates request DTOs from your `rules()` method and compiles them to Zod schemas for client-side validation.
+- **API Resources**: Transforms Laravel JsonResources into TypeScript representations.
+- **Routes & Ziggy**: Generates strict types for named routes.
+- **VS Code Extension**: Auto-generates types on file save.
+- **NPM Helpers**: First-party `@hemilrajput/laravel-typegen-helpers` package for `PaginatedResponse`, `InertiaForm`, etc.
 - **Attribute-Driven**: Opt-in to generation using the `#[TypeScript]` attribute.
 - **Zero-Config**: Smart defaults for standard Laravel projects.
 
@@ -50,11 +54,13 @@ export interface User {
 |---|:---:|:---:|
 | Eloquent Support | ✅ | ✅ |
 | Enum Support | ✅ | ✅ |
-| **FormRequest → DTO** | ✅ | ❌ |
+| **FormRequest → DTO & Zod** | ✅ | ❌ |
+| **API Resources** | ✅ | ❌ |
 | **Relationship Auto-Discovery** | ✅ | ❌ |
 | **Linked Enum Casts** | ✅ | ⚠️ (Manual) |
 | Attribute Driven | ✅ | ✅ |
-| Inertia Native | ✅ | ⚠️ |
+| Inertia Native & NPM Helpers | ✅ | ⚠️ |
+| VS Code Extension | ✅ | ❌ |
 
 ---
 
@@ -136,6 +142,11 @@ Without a morph map, emits `unknown | null` with a comment.
 - [x] Custom Cast class resolver (v0.4)
 - [x] VitePress documentation site (v1.0.0)
 - [x] Stable release (v1.0.0)
+- [x] API Resource generation (v1.3.0)
+- [x] VS Code Extension & NPM package (v2.0.0)
+- [x] Zod Schema Compilation (v2.2.0)
+- [ ] Resource AST Parser for robust types
+- [ ] Zod schema advanced constraints
 
 ## Configuration
 

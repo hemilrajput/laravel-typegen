@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-07-29
+
+### Added
+- **API Resource Support via AST Parsing**: Resources are no longer limited to PHPDoc tags. TypeGen now leverages `nikic/php-parser` to statically analyze the AST of the `toArray()` method, generating highly accurate TypeScript types. Also seamlessly supports conditional fields via `when()` and `whenLoaded()`.
+- **CI Safety Checks**: Added `--check` flag to `typescript:generate`. Designed for CI/CD pipelines, this flag fails the build if the generated types do not exactly match the files checked into version control.
+- **Zod Advanced Constraints**: Zod schemas now extract constraints from Laravel validation rules such as `email`, `min:x`, and `max:x` producing `.email()`, `.min(x)`, and `.max(x)` respectively.
+
+### Changed
+- **Modern Accessor Type Inference**: Supported reflection-based type inference for modern Laravel accessors (`Attribute::make()`). TypeGen evaluates the return type of the underlying closure to avoid a generic `any` output.
+- **Custom Cast Auto-Inference**: Custom cast classes implementing `CastsAttributes` are now automatically inferred by inspecting the return type of their `get()` method. Native casts like `AsCollection` and `AsStringable` are also automatically mapped.
+- **Strict Route Parameter Typing**: Route parameters bound to Eloquent models are now intelligently mapped by resolving the bound model and inspecting its `getKeyType()` (integer IDs become `number`, UUIDs become `string`).
+
 ## [2.2.2] - 2026-07-15
 
 ### Added
@@ -141,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
 
+[2.2.3]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.2...v2.2.3
 [2.2.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.1.1...v2.2.0

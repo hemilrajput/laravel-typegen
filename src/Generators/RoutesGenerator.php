@@ -2,7 +2,9 @@
 
 namespace Hemilrajput\TypeGen\Generators;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route as RouteFacade;
+use Illuminate\Support\Str;
 
 class RoutesGenerator
 {
@@ -21,13 +23,41 @@ class RoutesGenerator
 
             $params = [];
             $uri = $route->uri();
+
+            // Laravel returns an array of ReflectionParameter for closure or controller
+            $signatureParameters = [];
+            try {
+                $signatureParameters = $route->signatureParameters();
+            } catch (\Throwable $e) {
+                // Controller method might not exist
+            }
+
             foreach ($route->parameterNames() as $param) {
                 // Check if parameter is optional in the URI pattern (e.g. {user?})
                 $isOptional = str_contains($uri, '{'.$param.'?}');
                 $constraint = $route->wheres[$param] ?? null;
                 $type = 'string | number';
+
                 if ($constraint === '[0-9]+' || $constraint === '\d+') {
                     $type = 'number';
+                } else {
+                    foreach ($signatureParameters as $sigParam) {
+                        if ($sigParam->getName() === $param || $sigParam->getName() === Str::camel($param)) {
+                            $paramType = $sigParam->getType();
+                            if ($paramType instanceof \ReflectionNamedType && ! $paramType->isBuiltin()) {
+                                $className = $paramType->getName();
+                                if (is_subclass_of($className, Model::class)) {
+                                    try {
+                                        $instance = new $className;
+                                        $type = $instance->getKeyType() === 'int' ? 'number' : 'string';
+                                    } catch (\Throwable $e) {
+                                        // ignore
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
                 }
 
                 $params[$param] = [
