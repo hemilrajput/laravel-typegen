@@ -332,6 +332,13 @@ it('generates TypeScript types for API Resources from PHPDoc and Model fallback'
         ->and($contents)->toContain('preferences: unknown[];')
         ->and($contents)->toContain('status: PostStatus;');
 
+    // PostResource assertions (AST parsing + merges)
+    expect($contents)->toContain('export interface PostResource')
+        ->and($contents)->toContain('id: number;')
+        ->and($contents)->toContain('title?: string;')
+        ->and($contents)->toContain('body: string;')
+        ->and($contents)->toContain('slug?: any;');
+
     @unlink($outputPath);
 });
 

@@ -132,6 +132,27 @@ class ResourceGenerator
             if (! $item) {
                 continue;
             }
+
+            if ($item->key === null) {
+                // Support $this->merge([...]) and $this->mergeWhen(..., [...])
+                $expr = $item->value;
+                if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && $expr->name instanceof Identifier) {
+                    $methodName = $expr->name->toString();
+                    if ($methodName === 'merge' && isset($expr->args[0]) && $expr->args[0]->value instanceof Array_) {
+                        $mergedFields = $this->parseArrayNode($expr->args[0]->value, $reflectionClass);
+                        $fields = array_merge($fields, $mergedFields);
+                    } elseif ($methodName === 'mergeWhen' && isset($expr->args[1]) && $expr->args[1]->value instanceof Array_) {
+                        $mergedFields = $this->parseArrayNode($expr->args[1]->value, $reflectionClass);
+                        foreach ($mergedFields as $key => $type) {
+                            $cleanKey = rtrim((string) $key, '?');
+                            $fields[$cleanKey.'?'] = $type;
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             if (! $item->key instanceof String_) {
                 continue;
             }
@@ -184,9 +205,15 @@ class ResourceGenerator
             return $this->inferPropertyTypeFromModel($expr->name->toString(), $reflectionClass);
         }
 
-        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && ($expr->name instanceof Identifier && $expr->name->toString() === 'whenLoaded')) {
-            // Try to guess relation type if possible? Default to any array for now
-            return 'any';
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && $expr->name instanceof Identifier) {
+            $methodName = $expr->name->toString();
+            if ($methodName === 'when' && isset($expr->args[1])) {
+                return $this->inferTypeFromExpr($expr->args[1]->value, $reflectionClass);
+            }
+            if ($methodName === 'whenLoaded') {
+                // Try to guess relation type if possible? Default to any array for now
+                return 'any';
+            }
         }
 
         return 'any';
@@ -209,6 +236,10 @@ class ResourceGenerator
                 }
 
                 if (in_array($propName, $instance->getDates())) {
+                    return 'string';
+                }
+
+                if (in_array($propName, $instance->getFillable())) {
                     return 'string';
                 }
 
