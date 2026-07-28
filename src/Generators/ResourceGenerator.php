@@ -47,7 +47,7 @@ class ResourceGenerator
     /** @return array<string,string> */
     protected function collectFields(string $resourceClass, ReflectionClass $reflectionClass): array
     {
-        if (class_exists('\PhpParser\ParserFactory')) {
+        if (class_exists(\PhpParser\ParserFactory::class)) {
             $astFields = $this->collectFieldsFromAst($resourceClass, $reflectionClass);
             if ($astFields !== []) {
                 return $astFields;
@@ -109,27 +109,30 @@ class ResourceGenerator
             $parser = (new ParserFactory)->createForNewestSupportedVersion();
             $ast = $parser->parse($code);
 
-            $visitor = new ResourceAstVisitor;
-            $traverser = new NodeTraverser;
-            $traverser->addVisitor($visitor);
-            $traverser->traverse($ast);
+            $resourceAstVisitor = new ResourceAstVisitor;
+            $nodeTraverser = new NodeTraverser;
+            $nodeTraverser->addVisitor($resourceAstVisitor);
+            $nodeTraverser->traverse($ast);
 
-            if (! $visitor->toArrayReturn) {
+            if (!$resourceAstVisitor->toArrayReturn instanceof \PhpParser\Node\Expr\Array_) {
                 return [];
             }
 
-            return $this->parseArrayNode($visitor->toArrayReturn, $reflectionClass);
-        } catch (\Throwable $e) {
+            return $this->parseArrayNode($resourceAstVisitor->toArrayReturn, $reflectionClass);
+        } catch (\Throwable) {
             return [];
         }
     }
 
-    protected function parseArrayNode(Array_ $arrayNode, ReflectionClass $resourceReflection): array
+    protected function parseArrayNode(Array_ $array, ReflectionClass $reflectionClass): array
     {
         $fields = [];
-        foreach ($arrayNode->items as $item) {
+        foreach ($array->items as $item) {
             /** @phpstan-ignore-next-line */
-            if (! $item || ! $item->key instanceof String_) {
+            if (! $item) {
+                continue;
+            }
+            if (! $item->key instanceof String_) {
                 continue;
             }
             $key = $item->key->value;
@@ -138,7 +141,7 @@ class ResourceGenerator
                 $key .= '?';
             }
 
-            $fields[$key] = $this->inferTypeFromExpr($item->value, $resourceReflection);
+            $fields[$key] = $this->inferTypeFromExpr($item->value, $reflectionClass);
         }
 
         return $fields;
@@ -146,10 +149,8 @@ class ResourceGenerator
 
     protected function isOptional(Expr $expr): bool
     {
-        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this') {
-            if ($expr->name instanceof Identifier && in_array($expr->name->toString(), ['when', 'whenLoaded', 'mergeWhen'])) {
-                return true;
-            }
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && ($expr->name instanceof Identifier && in_array($expr->name->toString(), ['when', 'whenLoaded', 'mergeWhen']))) {
+            return true;
         }
         if ($expr instanceof StaticCall) {
             foreach ($expr->args as $arg) {
@@ -169,37 +170,31 @@ class ResourceGenerator
         return false;
     }
 
-    protected function inferTypeFromExpr(Expr $expr, ReflectionClass $resourceReflection): string
+    protected function inferTypeFromExpr(Expr $expr, ReflectionClass $reflectionClass): string
     {
-        if ($expr instanceof StaticCall && $expr->class instanceof Name && $expr->name instanceof Identifier) {
-            if ($expr->name->toString() === 'collection') {
-                return $expr->class->getLast().'[]';
-            }
+        if ($expr instanceof StaticCall && $expr->class instanceof Name && $expr->name instanceof Identifier && $expr->name->toString() === 'collection') {
+            return $expr->class->getLast().'[]';
         }
 
         if ($expr instanceof New_ && $expr->class instanceof Name) {
             return $expr->class->getLast();
         }
 
-        if ($expr instanceof PropertyFetch && $expr->var instanceof Variable && $expr->var->name === 'this') {
-            if ($expr->name instanceof Identifier) {
-                return $this->inferPropertyTypeFromModel($expr->name->toString(), $resourceReflection);
-            }
+        if ($expr instanceof PropertyFetch && $expr->var instanceof Variable && $expr->var->name === 'this' && $expr->name instanceof Identifier) {
+            return $this->inferPropertyTypeFromModel($expr->name->toString(), $reflectionClass);
         }
 
-        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this') {
-            if ($expr->name instanceof Identifier && $expr->name->toString() === 'whenLoaded') {
-                // Try to guess relation type if possible? Default to any array for now
-                return 'any';
-            }
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && ($expr->name instanceof Identifier && $expr->name->toString() === 'whenLoaded')) {
+            // Try to guess relation type if possible? Default to any array for now
+            return 'any';
         }
 
         return 'any';
     }
 
-    protected function inferPropertyTypeFromModel(string $propName, ReflectionClass $resourceReflection): string
+    protected function inferPropertyTypeFromModel(string $propName, ReflectionClass $reflectionClass): string
     {
-        $modelClass = $this->guessModelClass($resourceReflection);
+        $modelClass = $this->guessModelClass($reflectionClass);
         if ($modelClass) {
             try {
                 $instance = new $modelClass;

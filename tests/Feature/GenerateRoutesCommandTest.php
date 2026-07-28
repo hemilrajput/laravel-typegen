@@ -47,9 +47,7 @@ it('respects the --dry-run flag for routes', function (): void {
 });
 
 it('infers route parameter types from bound Eloquent models', function (): void {
-    Route::get('/users/{user}', function (User $user) {
-        return 'show';
-    })->name('users.show');
+    Route::get('/users/{user}', fn(User $user) => 'show')->name('users.show');
 
     $outputPath = sys_get_temp_dir().'/routes_models.ts';
     config()->set('typegen.output.routes_path', $outputPath);

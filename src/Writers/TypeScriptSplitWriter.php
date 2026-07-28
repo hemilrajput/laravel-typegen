@@ -62,15 +62,12 @@ class TypeScriptSplitWriter
                 return false;
             }
         }
-
-        // Check if there are extra files on disk
-        $diskFiles = [];
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'ts') {
-                $relPath = str_replace('\\', '/', substr($file->getRealPath(), strlen(realpath($dir)) + 1));
+                $relPath = str_replace('\\', '/', substr((string) $file->getRealPath(), strlen(realpath($dir)) + 1));
                 if (! isset($files[$relPath])) {
                     return false;
                 }

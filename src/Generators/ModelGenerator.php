@@ -158,7 +158,7 @@ class ModelGenerator
             if (method_exists($model, $modernMethodName)) {
                 $rm = new \ReflectionMethod($model, $modernMethodName);
                 $rt = $rm->getReturnType();
-                if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === 'Illuminate\Database\Eloquent\Casts\Attribute') {
+                if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === \Illuminate\Database\Eloquent\Casts\Attribute::class) {
                     try {
                         $attribute = $model->{$modernMethodName}();
                         if ($attribute->get) {
@@ -171,7 +171,7 @@ class ModelGenerator
                                 }
                             }
                         }
-                    } catch (\Throwable $e) {
+                    } catch (\Throwable) {
                         // ignore errors invoking the accessor during static analysis
                     }
                 }
