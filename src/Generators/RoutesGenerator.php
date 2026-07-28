@@ -28,7 +28,7 @@ class RoutesGenerator
             $signatureParameters = [];
             try {
                 $signatureParameters = $route->signatureParameters();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Controller method might not exist
             }
 
@@ -41,16 +41,16 @@ class RoutesGenerator
                 if ($constraint === '[0-9]+' || $constraint === '\d+') {
                     $type = 'number';
                 } else {
-                    foreach ($signatureParameters as $sigParam) {
-                        if ($sigParam->getName() === $param || $sigParam->getName() === Str::camel($param)) {
-                            $paramType = $sigParam->getType();
+                    foreach ($signatureParameters as $signatureParameter) {
+                        if ($signatureParameter->getName() === $param || $signatureParameter->getName() === Str::camel($param)) {
+                            $paramType = $signatureParameter->getType();
                             if ($paramType instanceof \ReflectionNamedType && ! $paramType->isBuiltin()) {
                                 $className = $paramType->getName();
                                 if (is_subclass_of($className, Model::class)) {
                                     try {
                                         $instance = new $className;
                                         $type = $instance->getKeyType() === 'int' ? 'number' : 'string';
-                                    } catch (\Throwable $e) {
+                                    } catch (\Throwable) {
                                         // ignore
                                     }
                                 }

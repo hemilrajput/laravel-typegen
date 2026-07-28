@@ -53,12 +53,12 @@ class CastTypeMapper
             // Inspect custom CastsAttributes
             if (is_a($base, CastsAttributes::class, true)) {
                 try {
-                    $reflection = new \ReflectionMethod($base, 'get');
-                    $returnType = $reflection->getReturnType();
+                    $reflectionMethod = new \ReflectionMethod($base, 'get');
+                    $returnType = $reflectionMethod->getReturnType();
                     if ($returnType instanceof \ReflectionNamedType) {
                         return $this->phpTypeToTypeScript($returnType->getName());
                     }
-                } catch (\ReflectionException $e) {
+                } catch (\ReflectionException) {
                     // fall back
                 }
             }
