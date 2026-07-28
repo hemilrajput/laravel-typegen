@@ -1,19 +1,35 @@
 # Getting Started
 
-Laravel TypeGen is a zero-dependency PHP package designed to turn your Eloquent models, Enums, and FormRequests into a single, clean TypeScript definitions file. It is built to keep your Laravel backend and Inertia frontend synchronized without manual type maintenance.
+Laravel TypeGen is a zero-dependency PHP package designed to turn your Eloquent models, Enums, FormRequests, and API Resources into a single, clean, or split TypeScript definitions file. It is built to keep your Laravel backend and Inertia frontend synchronized perfectly, avoiding any manual type maintenance or drift.
+
+---
+
+## Technical Design: How It Works
+
+TypeGen uses a hybrid multi-layer inspection technique to resolve database schema, runtime PHP classes, and request validation states into TypeScript schemas:
+
+| Component | Extraction Method | Target Output |
+| :--- | :--- | :--- |
+| **Eloquent Models** | Evaluates model metadata, legacy/modern accessors, custom cast interfaces, and inspects database columns directly from the active connection. | `interface` or `type` |
+| **Relationships** | Follows model declarations via BFS graph walk to resolve deep relation nesting, including polymorphic morph maps. | Optional object graphs |
+| **Form Requests** | Statically analyzes `rules()` return structure to capture required, nested (`*`), nullable, and enum validations. | Request payload DTOs |
+| **API Resources** | Uses static Abstract Syntax Tree (AST) analysis via `nikic/php-parser` on `toArray()` to capture conditional elements. | API response schemas |
+| **Routes** | Inspects Named Routes, reflection of controller signatures, and Eloquent bound model types. | Strict route mappings |
+
+---
 
 ## Requirements
 
-- **PHP**: ^8.3
-- **Laravel**: ^11.0, ^12.0, or ^13.0
+- **PHP**: `^8.3`
+- **Laravel**: `^11.0`, `^12.0`, or `^13.0`
+- **Node.js** (Optional): `>= 16` for Vite or Mix compilation.
 
-### Node.js (Optional but recommended)
-Used if you compile your frontend with Vite or Mix.
-- Node.js >= 16
+---
 
 ## 1. Install the Package
 
-Install via composer:
+Install via Composer:
+
 ```bash
 composer require hemilrajput/laravel-typegen
 ```
@@ -26,9 +42,29 @@ php artisan vendor:publish --tag=typegen-config
 
 This will create a configuration file at `config/typegen.php`.
 
-## Quick Start
+---
 
-To generate types for a model, simply annotate your class with the `#[TypeScript]` attribute.
+## 2. Configuration Reference
+
+The published `config/typegen.php` configuration provides a simple but powerful customization layer:
+
+| Key | Default | Description |
+| :--- | :--- | :--- |
+| `scan_mode` | `'attribute'` | Can be `'attribute'` (only scans classes marked with `#[TypeScript]`) or `'all'` (scans every class in paths). |
+| `paths` | `app_path('Models')`, etc. | Directories containing target classes to scan. |
+| `output.path` | `resources/js/types/generated.ts` | The output path where generated types will be written. |
+| `output.routes_path` | `resources/js/types/routes.ts` | The output path for route parameter mappings. |
+| `output.style` | `'interface'` | Type style: `'interface'` or `'type'`. |
+| `output.zod` | `false` | When `true`, compiles Zod validation schemas alongside TypeScript types. |
+| `include_timestamps`| `true` | Includes `created_at` and `updated_at` automatically. |
+| `include_hidden` | `false` | When `false`, excludes columns listed in your model's `$hidden` property. |
+| `relations.wrap_with_relation` | `true` | Wraps relationship properties in optional helpers for clarity. |
+
+---
+
+## 3. Quick Start
+
+To generate types for a model, annotate the class using the `#[TypeScript]` attribute.
 
 ### 1. Annotate your model
 
@@ -45,9 +81,9 @@ class User extends Model
 }
 ```
 
-### 2. Generate the types
+### 2. Run the generator
 
-Run the generation command:
+Run the Artisan generation command:
 
 ```bash
 php artisan typescript:generate
@@ -68,3 +104,4 @@ export interface User {
   updated_at: string;
 }
 ```
+
