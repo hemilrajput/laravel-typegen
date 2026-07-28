@@ -281,6 +281,7 @@ class GenerateCommand extends Command
                 return self::SUCCESS;
             }
             $this->error("\nGenerated types do not match the existing file(s). Please run 'php artisan typescript:generate' and commit the changes.");
+
             return self::FAILURE;
         }
 

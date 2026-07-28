@@ -47,7 +47,7 @@ class ResourceGenerator
     /** @return array<string,string> */
     protected function collectFields(string $resourceClass, ReflectionClass $reflectionClass): array
     {
-        if (class_exists(\PhpParser\ParserFactory::class)) {
+        if (class_exists(ParserFactory::class)) {
             $astFields = $this->collectFieldsFromAst($resourceClass, $reflectionClass);
             if ($astFields !== []) {
                 return $astFields;
@@ -114,7 +114,7 @@ class ResourceGenerator
             $nodeTraverser->addVisitor($resourceAstVisitor);
             $nodeTraverser->traverse($ast);
 
-            if (!$resourceAstVisitor->toArrayReturn instanceof \PhpParser\Node\Expr\Array_) {
+            if (! $resourceAstVisitor->toArrayReturn instanceof Array_) {
                 return [];
             }
 

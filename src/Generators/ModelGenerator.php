@@ -6,6 +6,7 @@ use Hemilrajput\TypeGen\Attributes\TypeScript;
 use Hemilrajput\TypeGen\Attributes\TypeScriptIgnore;
 use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use Hemilrajput\TypeGen\Relations\RelationResolver;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -158,7 +159,7 @@ class ModelGenerator
             if (method_exists($model, $modernMethodName)) {
                 $rm = new \ReflectionMethod($model, $modernMethodName);
                 $rt = $rm->getReturnType();
-                if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === \Illuminate\Database\Eloquent\Casts\Attribute::class) {
+                if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === Attribute::class) {
                     try {
                         $attribute = $model->{$modernMethodName}();
                         if ($attribute->get) {
