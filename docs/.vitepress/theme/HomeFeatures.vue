@@ -419,7 +419,7 @@ const STATS = [
           </div>
           <div class="footer-cmd" style="margin-top:8px">
             <span class="fp">$</span>
-            <code>php artisan typegen:generate</code>
+            <code>php artisan typescript:generate</code>
           </div>
         </div>
       </div>
@@ -429,7 +429,7 @@ const STATS = [
     <div class="footer-bottom">
       <span>Released under the <strong>MIT License</strong>.</span>
       <span>Copyright © 2024–2026 Hemil Rajput</span>
-      <span class="footer-ver">v2.2.3</span>
+      <span class="footer-ver">v2.3.2</span>
     </div>
   </footer>
 </template>
@@ -976,9 +976,23 @@ const STATS = [
 
 /* Links grid */
 .footer-links {
-  display: grid; grid-template-columns: repeat(3,1fr); gap: 32px;
+  display: grid;
+  grid-template-columns: auto auto minmax(360px, 1fr);
+  gap: 48px;
+  justify-content: end;
 }
-@media (max-width: 600px) { .footer-links { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 900px) {
+  .footer-links {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+}
+@media (max-width: 600px) {
+  .footer-links {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
 
 .footer-col { display: flex; flex-direction: column; gap: 10px; }
 .footer-col-title {
@@ -992,12 +1006,12 @@ const STATS = [
 .footer-link:hover { color: #FF2D20; }
 
 .footer-cmd {
-  display: flex; align-items: flex-start; gap: 7px;
+  display: flex; align-items: center; gap: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11.5px; color: var(--vp-c-text-2);
   background: var(--vp-c-bg); border: 1px solid var(--vp-c-border);
-  border-radius: 8px; padding: 9px 12px;
-  line-height: 1.5; word-break: break-all;
+  border-radius: 8px; padding: 10px 14px;
+  line-height: 1.5; white-space: nowrap; overflow-x: auto;
 }
 .fp { color: #FF2D20; font-weight: 700; flex-shrink: 0; }
 .footer-cmd code { background: none; padding: 0; border: none; font-family: inherit; font-size: inherit; }

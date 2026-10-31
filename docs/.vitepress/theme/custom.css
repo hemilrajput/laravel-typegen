@@ -397,6 +397,11 @@ body {
 }
 
 /* ── Home page VPContent padding fix ───────────────────────── */
-.VPHome .VPHomeContent {
-  padding-top: 0 !important;
+.VPHome {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+.VPHome .VPHomeContent,
+.VPHome .VPHomeFeatures {
+  display: none !important;
 }
