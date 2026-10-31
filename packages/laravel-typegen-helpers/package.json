@@ -1,6 +1,6 @@
 {
     "name": "@hemilrajput/laravel-typegen-helpers",
-    "version": "2.2.3",
+    "version": "2.3.0",
     "description": "TypeScript utility types for Laravel TypeGen — PaginatedResponse, InertiaForm, ApiResource, and more.",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",

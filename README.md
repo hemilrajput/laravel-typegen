@@ -145,8 +145,9 @@ Without a morph map, emits `unknown | null` with a comment.
 - [x] API Resource generation (v1.3.0)
 - [x] VS Code Extension & NPM package (v2.0.0)
 - [x] Zod Schema Compilation (v2.2.0)
-- [ ] Resource AST Parser for robust types
-- [ ] Zod schema advanced constraints
+- [x] Resource AST Parser for robust types (v2.3.0)
+- [x] Zod schema advanced constraints & confirmation rules (v2.3.0)
+- [x] Ziggy Route Declarations & DB-less CI Fallback (v2.3.0)
 
 ## Configuration
 
