@@ -169,7 +169,7 @@ class ModelGenerator
 
                 $readonly = $model->isFillable($attr) ? '' : 'readonly ';
 
-                $tsType = (($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType);
+                $tsType = ($dbColumn['nullable'] ? "{$baseType} | null" : $baseType);
 
                 // If it's already defined via PHPDoc, don't overwrite the type but we can keep the readonly modifier logic.
                 if (! isset($fields[$attr])) {

@@ -1,6 +1,7 @@
 <?php
 
 use Hemilrajput\TypeGen\Tests\TestCase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Process\Process;
 
@@ -19,7 +20,7 @@ it('generates a typescript file from a model with #[TypeScript]', function (): v
     expect($contents)->toContain('readonly is_admin: boolean');
     expect($contents)->toContain('name: string');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('respects the --dry-run flag', function (): void {
@@ -79,7 +80,7 @@ it('generates zod schemas when configured', function (): void {
         ->toContain('author: z.object({')
         ->toContain('name: z.string(),');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('handles messy form requests without crashing', function (): void {
@@ -105,7 +106,7 @@ it('handles messy form requests without crashing', function (): void {
     expect($contents)->toContain('metadata?: {');
     expect($contents)->toContain('key?: string;');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('auto-discovers related models and emits them together', function (): void {
@@ -124,7 +125,7 @@ it('auto-discovers related models and emits them together', function (): void {
         ->toContain('export interface Post')   // auto-discovered
         ->toContain('export interface Profile'); // auto-discovered
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('handles cycles without infinite loop', function (): void {
@@ -139,7 +140,7 @@ it('handles cycles without infinite loop', function (): void {
     expect($contents)->toContain('export interface User');
     expect($contents)->toContain('export interface Post');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('splits output into separate files with imports when split config is enabled', function (): void {
@@ -176,7 +177,7 @@ it('splits output into separate files with imports when split config is enabled'
             if ($file->isDir()) {
                 @rmdir($file->getRealPath());
             } else {
-                @unlink($file->getRealPath());
+                File::delete($file->getRealPath());
             }
         }
         @rmdir($dir);
@@ -206,7 +207,7 @@ it('respects ignore attributes and parameters', function (): void {
         ->and($ignoredUserBlock)->not->toContain('profile?')
         ->and($ignoredUserBlock)->not->toContain('created_at:');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('infers types and nullability from database schema when table exists', function (): void {
@@ -240,7 +241,7 @@ it('infers types and nullability from database schema when table exists', functi
         ->and($userBlock)->toContain('readonly age: number;')          // inferred integer -> number from DB
         ->and($userBlock)->toContain('readonly is_active: number;');   // SQLite maps boolean to integer/number
 
-    @unlink($outputPath);
+    File::delete($outputPath);
     Schema::drop('users');
 });
 
@@ -258,7 +259,7 @@ it('wraps relationships in Relation helper by default', function (): void {
         ->and($contents)->toContain('posts?: Relation<Post[]>;')
         ->and($contents)->toContain('profile?: Relation<Profile | null>;');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('respects relations wrap configuration', function (): void {
@@ -276,7 +277,7 @@ it('respects relations wrap configuration', function (): void {
         ->and($contents)->toContain('posts?: Post[];')
         ->and($contents)->toContain('profile?: Profile | null;');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('runs pre and post generation hooks and replaces the placeholder', function (): void {
@@ -284,8 +285,8 @@ it('runs pre and post generation hooks and replaces the placeholder', function (
     $preFile = sys_get_temp_dir().'/pre_hook_ran.txt';
     $postFile = sys_get_temp_dir().'/post_hook_ran.txt';
 
-    @unlink($preFile);
-    @unlink($postFile);
+    File::delete($preFile);
+    File::delete($postFile);
 
     config()->set('typegen.paths.models', __DIR__.'/../Fixtures/Models');
     config()->set('typegen.output.path', $outputPath);
@@ -301,9 +302,9 @@ it('runs pre and post generation hooks and replaces the placeholder', function (
     expect(file_exists($preFile))->toBeTrue()
         ->and(file_exists($postFile))->toBeTrue();
 
-    @unlink($outputPath);
-    @unlink($preFile);
-    @unlink($postFile);
+    File::delete($outputPath);
+    File::delete($preFile);
+    File::delete($postFile);
 });
 
 it('generates TypeScript types for API Resources from PHPDoc and Model fallback', function (): void {
@@ -339,7 +340,7 @@ it('generates TypeScript types for API Resources from PHPDoc and Model fallback'
         ->and($contents)->toContain('body: string;')
         ->and($contents)->toContain('slug?: any;');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('generates valid typescript that compiles', function (): void {
@@ -393,7 +394,7 @@ it('generates valid typescript that compiles', function (): void {
         "TypeScript compilation failed:\n".$process->getErrorOutput()."\n".$process->getOutput()
     );
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 })->skip(fn (): bool => false, 'npx is not installed');
 
 it('fails in check mode if files do not match', function (): void {
@@ -407,7 +408,7 @@ it('fails in check mode if files do not match', function (): void {
         ->assertFailed()
         ->expectsOutputToContain('Generated types do not match the existing file(s)');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('succeeds in check mode if files match', function (): void {
@@ -421,5 +422,5 @@ it('succeeds in check mode if files match', function (): void {
         ->assertSuccessful()
         ->expectsOutputToContain('Types are up to date');
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });

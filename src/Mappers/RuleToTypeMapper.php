@@ -145,7 +145,7 @@ class RuleToTypeMapper
             // The class is protected; use a bound closure to read it safely.
             $enumClass = (fn () => $this->type)->call($rule);
 
-            if (is_string($enumClass) && enum_exists($enumClass)) {
+            if (enum_exists($enumClass)) {
                 $enumClassRef = $enumClass;
 
                 return class_basename($enumClass);

@@ -2,6 +2,7 @@
 
 namespace Hemilrajput\TypeGen\Writers;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 class TypeScriptSplitWriter
@@ -26,7 +27,7 @@ class TypeScriptSplitWriter
                 if ($file->isDir()) {
                     @rmdir($file->getRealPath());
                 } elseif ($file->getExtension() === 'ts') {
-                    @unlink($file->getRealPath());
+                    File::delete($file->getRealPath());
                 }
             }
         } else {

@@ -17,6 +17,7 @@ use Hemilrajput\TypeGen\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rules\Password;
@@ -163,5 +164,5 @@ it('emits RouteParamsMap and Ziggy module declaration when ziggy routes are enab
         ->and($contents)->toContain("'users.index': [];")
         ->and($contents)->toContain("'users.show': [{ name: 'user', required: true }];");
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });

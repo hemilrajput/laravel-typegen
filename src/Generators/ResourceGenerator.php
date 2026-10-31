@@ -92,9 +92,7 @@ class ResourceGenerator
                 }
                 // Fillable
                 foreach ($instance->getFillable() as $attr) {
-                    if (! isset($fields[$attr])) {
-                        $fields[$attr] = 'string';
-                    }
+                    $fields[$attr] ??= 'string';
                 }
             }
         }
@@ -306,7 +304,7 @@ class ResourceGenerator
                         if ($col['name'] === $propName) {
                             $base = $this->dbTypeToTypeScript($col['type_name']);
 
-                            return ($col['nullable'] ?? false) ? "{$base} | null" : $base;
+                            return $col['nullable'] ? "{$base} | null" : $base;
                         }
                     }
                 }

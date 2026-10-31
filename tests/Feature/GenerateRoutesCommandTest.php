@@ -2,6 +2,7 @@
 
 use Hemilrajput\TypeGen\Tests\Fixtures\Models\User;
 use Hemilrajput\TypeGen\Tests\TestCase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 uses(TestCase::class);
@@ -29,7 +30,7 @@ it('generates route types for named routes', function (): void {
         ->toContain("T extends 'users.show' ? { user: string | number } :")
         ->toContain("T extends 'posts.comments.show' ? { post: string | number; comment?: string | number } :");
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });
 
 it('respects the --dry-run flag for routes', function (): void {
@@ -38,7 +39,7 @@ it('respects the --dry-run flag for routes', function (): void {
     $outputPath = sys_get_temp_dir().'/routes_dry.ts';
     config()->set('typegen.output.routes_path', $outputPath);
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 
     $this->artisan('typescript:routes', ['--dry-run' => true])
         ->assertSuccessful();
@@ -59,5 +60,5 @@ it('infers route parameter types from bound Eloquent models', function (): void 
     // User model has integer primary key, so user should be 'number'
     expect($contents)->toContain("T extends 'users.show' ? { user: number } :");
 
-    @unlink($outputPath);
+    File::delete($outputPath);
 });

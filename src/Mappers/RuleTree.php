@@ -31,9 +31,7 @@ class RuleTree
             return;
         }
 
-        if (! isset($tree[$head])) {
-            $tree[$head] = [];
-        }
+        $tree[$head] ??= [];
 
         if ($parts[0] === '*') {
             array_shift($parts);
