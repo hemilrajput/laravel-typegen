@@ -1,6 +1,6 @@
 # Getting Started
 
-Laravel TypeGen is a zero-dependency PHP package designed to turn your Eloquent models, Enums, FormRequests, and API Resources into a single, clean, or split TypeScript definitions file. It is built to keep your Laravel backend and Inertia frontend synchronized perfectly, avoiding any manual type maintenance or drift.
+Laravel TypeGen is a lightweight PHP package designed to turn your Eloquent models, Enums, FormRequests, and API Resources into a single, clean, or split TypeScript definitions file. It requires only `nikic/php-parser` to perform AST analysis on API resources and keeps your Laravel backend and Inertia frontend synchronized perfectly.
 
 ---
 
@@ -20,9 +20,10 @@ TypeGen uses a hybrid multi-layer inspection technique to resolve database schem
 
 ## Requirements
 
-- **PHP**: `^8.3`
+- **PHP**: `^8.2`, `^8.3`, or `^8.4`
 - **Laravel**: `^11.0`, `^12.0`, or `^13.0`
-- **Node.js** (Optional): `>= 16` for Vite or Mix compilation.
+- **Database**: Active migrated database connection (or pass `--skip-db-check` for DB-less environments)
+- **Node.js** (Optional): `>= 18` (CI tests Node 20) for Vite or frontend toolchains.
 
 ---
 

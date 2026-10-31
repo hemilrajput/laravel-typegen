@@ -68,6 +68,7 @@ export interface User {
 ```bash
 composer require hemilrajput/laravel-typegen
 ```
+*Requires PHP `^8.2` and Laravel `^11.0|^12.0|^13.0`.*
 
 ## 🛠 Usage
 
@@ -134,20 +135,11 @@ Without a morph map, emits `unknown | null` with a comment.
 ---
 
 ## 🗺 Roadmap
-- [x] Enum support (v0.2)
-- [x] FormRequest → DTO (v0.2)
-- [x] Eloquent relationships (v0.3)
-- [x] Route parameter types (v0.4)
-- [x] Watch mode (v0.4)
-- [x] Custom Cast class resolver (v0.4)
-- [x] VitePress documentation site (v1.0.0)
-- [x] Stable release (v1.0.0)
-- [x] API Resource generation (v1.3.0)
-- [x] VS Code Extension & NPM package (v2.0.0)
-- [x] Zod Schema Compilation (v2.2.0)
-- [x] Resource AST Parser for robust types (v2.3.0)
-- [x] Zod schema advanced constraints & confirmation rules (v2.3.0)
-- [x] Ziggy Route Declarations & DB-less CI Fallback (v2.3.0)
+
+- [x] **v2.3.1**: AST Resource extraction, DB-less CI fallback (`--skip-db-check`), Ziggy route typing.
+- [x] **v2.3.2**: Release process hardening (gated tag CI), security policy, metadata consistency, and `.gitattributes`.
+- [ ] **v2.4.0**: CI hardening (PHP 8.5, prefer-lowest, Windows, coverage baseline), contract tests (`tsc --strict` compilation on generated output), deprecation warnings.
+- [ ] **v3.0.0-rc.1 / v3.0.0**: Minimum PHP 8.3, Laravel 12/13 baseline, opt-in/auto-detected Ziggy vs Wayfinder interop, frozen public API.
 
 ## Configuration
 

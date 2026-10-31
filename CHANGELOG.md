@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-10-31
+
+### Changed
+- Release workflow is now strictly gated by passing CI test runs and CHANGELOG tag validation.
+- Added unified local `composer ci` script running Pint, PHPStan, Rector, and Pest in sequence.
+- Cleaned redundant PHP constraint in `composer.json` to `^8.2`.
+- Added `.gitattributes` with `export-ignore` rules for documentation, tests, and workspace packages to optimize archive downloads.
+- Aligned documentation requirements with package metadata and added `SECURITY.md`.
+
 ## [2.3.1] - 2026-10-31
 
 ### Fixed
@@ -94,6 +103,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2026-06-05
+
+### Fixed
+- Restored PHP 8.2 compatibility across `composer.json` and CI testing matrix.
+
+---
+
 ## [2.0.0] - 2026-05-30
 
 ### Breaking Changes
@@ -170,6 +186,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
 
+[2.3.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.3.1...v2.3.2
+[2.3.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.3...v2.3.0
 [2.2.3]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.2...v2.2.3
 [2.2.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.0...v2.2.1

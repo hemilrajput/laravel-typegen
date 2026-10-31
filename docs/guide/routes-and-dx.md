@@ -86,7 +86,7 @@ php artisan typescript:generate --watch
 
 TypeGen will run in the background, checking the modified times of your models, enums, form requests, and the `typegen.php` config file every second. When any changes are detected, it regenerates the types instantly.
 
-Watch mode is pure PHP, cross-platform, zero-dependency, and lightweight.
+Watch mode is pure PHP, cross-platform, and lightweight.
 
 ---
 
