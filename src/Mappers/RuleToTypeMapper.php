@@ -3,7 +3,9 @@
 namespace Hemilrajput\TypeGen\Mappers;
 
 use Illuminate\Validation\Rules\Enum as EnumRule;
+use Illuminate\Validation\Rules\File as FileRule;
 use Illuminate\Validation\Rules\In as InRule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class RuleToTypeMapper
 {
@@ -22,8 +24,32 @@ class RuleToTypeMapper
         $constraints = [];
 
         foreach ($tokens as $token) {
-            // Object rules (Enum, In, Rule::in(...), etc.)
+            // Object rules (Enum, In, Rule::in(...), Password, File, etc.)
             if (is_object($token)) {
+                if ($token instanceof PasswordRule) {
+                    $type ??= 'string';
+                    try {
+                        $rf = new \ReflectionClass($token);
+                        if ($rf->hasProperty('min')) {
+                            $prop = $rf->getProperty('min');
+                            $minLen = $prop->getValue($token);
+                            if (is_numeric($minLen)) {
+                                $constraints['min'] = (float) $minLen;
+                            }
+                        }
+                        if ($rf->hasProperty('max')) {
+                            $prop = $rf->getProperty('max');
+                            $maxLen = $prop->getValue($token);
+                            if (is_numeric($maxLen)) {
+                                $constraints['max'] = (float) $maxLen;
+                            }
+                        }
+                    } catch (\Throwable) {
+                    }
+
+                    continue;
+                }
+
                 $type ??= $this->describeObjectRule($token, $enumClass);
 
                 continue;
@@ -130,6 +156,14 @@ class RuleToTypeMapper
             $values = $rule->__toString(); // "in:a,b,c"
 
             return $this->inToUnion(substr($values, 3));
+        }
+
+        if ($rule instanceof FileRule) {
+            return 'File';
+        }
+
+        if ($rule instanceof PasswordRule) {
+            return 'string';
         }
 
         return null;

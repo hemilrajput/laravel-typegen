@@ -16,5 +16,6 @@ final class TypeScript
         public array $includeRelations = [],
         /** @var array<string> */
         public array $ignore = [],
+        public ?string $model = null,
     ) {}
 }

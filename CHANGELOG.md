@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-10-31
+
+### Added
+- **Intelligent whenLoaded() AST Typing**: Resolves relation models and nested resource wrappers (`PostResource[]` or `UserResource | null`) instead of defaulting to `any`. Supports custom arrow functions, closures, and explicit `#[TypeScript(model: ...)]` or `@mixin` annotations on resources.
+- **Ziggy Route Declarations**: Automatically generates `RouteParamsMap` and `declare module 'ziggy-js' { interface RouteList { ... } }` in `routes.ts` for end-to-end typed `route()` calls in Inertia/Vue/React frontend apps.
+- **DB-less CI & Fallback Mode**: Added `--skip-db-check` CLI flag and `strict_schema` configuration option. Allows pipelines without an active database to generate accurate types from `$fillable`, `$casts`, and PHPDoc annotations without throwing exceptions.
+- **FormRequest Confirmation & Password Rules**: FormRequest validation rules containing `confirmed` automatically generate `{field}_confirmation` in the TypeScript interface and Zod schema. `Password` rule objects (`Password::min(...)`) are natively parsed as string types with length constraints.
+- **API Resource DB Schema Column Inference**: Property fetches in resources automatically resolve exact database column types (`boolean`, `number`, `string | null`) from the database schema when tables exist.
+
 ## [2.2.3] - 2026-07-29
 
 ### Added

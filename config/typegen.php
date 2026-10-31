@@ -72,6 +72,16 @@ return [
     'include_timestamps' => true,
     'include_hidden' => false, // respect $hidden
     'nullable_by_default' => false, // unless schema/cast says otherwise
+    'strict_schema' => true, // throw exception if database table does not exist (set false for db-less CI)
+
+    /*
+    |---------------------------------------------------------------------
+    | Routes & Ziggy
+    |---------------------------------------------------------------------
+    */
+    'routes' => [
+        'ziggy' => true,
+    ],
 
     /*
     |---------------------------------------------------------------------

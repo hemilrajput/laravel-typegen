@@ -2,10 +2,17 @@
 
 namespace Hemilrajput\TypeGen\Generators;
 
+use Hemilrajput\TypeGen\Attributes\TypeScript;
 use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Relations\RelationDetector;
+use Hemilrajput\TypeGen\Relations\RelationResolver;
 use Hemilrajput\TypeGen\Scanners\ResourceAstVisitor;
+use Illuminate\Support\Facades\Schema;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\Expr\ConstFetch;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\PropertyFetch;
@@ -13,7 +20,10 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\DNumber;
+use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeTraverser;
 use PhpParser\ParserFactory;
 use ReflectionClass;
@@ -23,7 +33,10 @@ class ResourceGenerator
     public function __construct(
         protected CastTypeMapper $mapper,
         protected array $config,
-    ) {}
+        protected ?RelationResolver $resolver = null,
+    ) {
+        $this->resolver ??= new RelationResolver(new RelationDetector);
+    }
 
     public function generate(string $resourceClass): string
     {
@@ -211,9 +224,53 @@ class ResourceGenerator
                 return $this->inferTypeFromExpr($expr->args[1]->value, $reflectionClass);
             }
             if ($methodName === 'whenLoaded') {
-                // Try to guess relation type if possible? Default to any array for now
+                if (isset($expr->args[1])) {
+                    $secondArg = $expr->args[1]->value;
+                    if ($secondArg instanceof ArrowFunction) {
+                        return $this->inferTypeFromExpr($secondArg->expr, $reflectionClass);
+                    }
+                    if ($secondArg instanceof Closure) {
+                        foreach ($secondArg->stmts as $stmt) {
+                            if ($stmt instanceof Return_ && $stmt->expr instanceof Expr) {
+                                return $this->inferTypeFromExpr($stmt->expr, $reflectionClass);
+                            }
+                        }
+                    }
+
+                    return $this->inferTypeFromExpr($secondArg, $reflectionClass);
+                }
+
+                if (isset($expr->args[0]) && $expr->args[0]->value instanceof String_) {
+                    $relationName = $expr->args[0]->value->value;
+                    $modelClass = $this->guessModelClass($reflectionClass);
+                    if ($modelClass && class_exists($modelClass)) {
+                        $resolved = $this->resolver->resolve($modelClass, $relationName);
+                        if (! $resolved['error'] && $resolved['related']) {
+                            $relatedShort = class_basename($resolved['related']);
+                            $resourceName = $this->guessResourceName($resolved['related'], $reflectionClass);
+                            $targetType = $resourceName ?? $relatedShort;
+
+                            return $resolved['kind'] === 'collection' ? "{$targetType}[]" : "{$targetType} | null";
+                        }
+                    }
+                }
+
                 return 'any';
             }
+        }
+
+        if ($expr instanceof String_) {
+            return $expr->value === 'any' ? 'any' : 'string';
+        }
+
+        if ($expr instanceof LNumber || $expr instanceof DNumber) {
+            return 'number';
+        }
+
+        if ($expr instanceof ConstFetch) {
+            $val = strtolower($expr->name->toString());
+
+            return in_array($val, ['true', 'false'], true) ? 'boolean' : ($val === 'null' ? 'null' : 'any');
         }
 
         return 'any';
@@ -243,8 +300,17 @@ class ResourceGenerator
                     return 'string';
                 }
 
-                // If not casted, assume string for safety unless it's a known boolean/number from schema?
-                // For now, fallback to any if we can't be sure, or string.
+                $table = $instance->getTable();
+                if (Schema::hasTable($table)) {
+                    foreach (Schema::getColumns($table) as $col) {
+                        if ($col['name'] === $propName) {
+                            $base = $this->dbTypeToTypeScript($col['type_name']);
+
+                            return ($col['nullable'] ?? false) ? "{$base} | null" : $base;
+                        }
+                    }
+                }
+
                 return 'any';
             } catch (\Throwable) {
                 // ignore
@@ -254,8 +320,63 @@ class ResourceGenerator
         return 'any';
     }
 
+    protected function guessResourceName(string $modelClass, ReflectionClass $reflectionClass): ?string
+    {
+        $short = class_basename($modelClass);
+        $candidate = $short.'Resource';
+        $currentNs = $reflectionClass->getNamespaceName();
+
+        if (class_exists($currentNs.'\\'.$candidate)) {
+            return $candidate;
+        }
+
+        $appNamespace = 'App\\';
+        if (function_exists('app')) {
+            try {
+                $appNamespace = app()->getNamespace();
+            } catch (\Throwable) {
+            }
+        }
+
+        if (class_exists($appNamespace."Http\\Resources\\{$candidate}")) {
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    protected function dbTypeToTypeScript(string $typeName): string
+    {
+        $typeName = strtolower($typeName);
+
+        return match ($typeName) {
+            'integer', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'float', 'double', 'decimal', 'numeric' => 'number',
+            'boolean', 'bool' => 'boolean',
+            'array' => 'any[]',
+            'object', 'stdclass' => 'Record<string, any>',
+            'json' => 'Record<string, unknown>',
+            default => 'string',
+        };
+    }
+
     protected function guessModelClass(ReflectionClass $reflectionClass): ?string
     {
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
+        if ($attr) {
+            $configuredModel = $attr->newInstance()->model;
+            if ($configuredModel && class_exists($configuredModel)) {
+                return $configuredModel;
+            }
+        }
+
+        $docComment = $reflectionClass->getDocComment();
+        if ($docComment && preg_match('/@mixin\s+([^\s]+)/', $docComment, $match)) {
+            $mixinClass = ltrim($match[1], '\\');
+            if (class_exists($mixinClass)) {
+                return $mixinClass;
+            }
+        }
+
         $baseName = $reflectionClass->getShortName();
         if (! str_ends_with($baseName, 'Resource')) {
             return null;

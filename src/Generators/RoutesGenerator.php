@@ -81,23 +81,39 @@ class RoutesGenerator
 
         // Render RouteParams
         $paramLines = [];
+        $mapLines = [];
+        $ziggyLines = [];
         foreach ($routeMap as $name => $params) {
             if ($params === []) {
                 $paramLines[] = "  T extends '{$name}' ? {} :";
+                $mapLines[] = "  '{$name}': {};";
+                $ziggyLines[] = "    '{$name}': [];";
             } else {
                 $fields = [];
+                $ziggyParams = [];
                 foreach ($params as $paramName => $meta) {
                     $opt = $meta['optional'] ? '?' : '';
                     $type = $meta['type'];
                     $fields[] = "{$paramName}{$opt}: {$type}";
+                    $reqStr = $meta['optional'] ? 'false' : 'true';
+                    $ziggyParams[] = "{ name: '{$paramName}', required: {$reqStr} }";
                 }
                 $fieldsStr = implode('; ', $fields);
+                $ziggyParamsStr = implode(', ', $ziggyParams);
                 $paramLines[] = "  T extends '{$name}' ? { {$fieldsStr} } :";
+                $mapLines[] = "  '{$name}': { {$fieldsStr} };";
+                $ziggyLines[] = "    '{$name}': [{$ziggyParamsStr}];";
             }
         }
 
         $routeParamsBody = implode("\n", $paramLines);
+        $routeParamsMapBody = implode("\n", $mapLines);
+        $ziggyRoutesBody = implode("\n", $ziggyLines);
         $banner = $this->config['output']['banner'] ?? '';
+
+        $ziggyBlock = ($this->config['routes']['ziggy'] ?? true)
+            ? "\n\nexport type RouteParamsMap = {\n{$routeParamsMapBody}\n};\n\ndeclare module 'ziggy-js' {\n  interface RouteList {\n{$ziggyRoutesBody}\n  }\n}"
+            : '';
 
         return <<<TS
 {$banner}
@@ -106,7 +122,7 @@ export type RouteName =
 
 export type RouteParams<T extends RouteName> =
 {$routeParamsBody}
-  never;
+  never;{$ziggyBlock}
 
 TS;
     }

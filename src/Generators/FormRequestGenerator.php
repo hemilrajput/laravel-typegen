@@ -65,7 +65,20 @@ class FormRequestGenerator
             return [];
         }
 
-        return $instance->rules();
+        $rules = $instance->rules();
+
+        foreach ($rules as $field => $ruleList) {
+            $normalized = is_string($ruleList) ? explode('|', $ruleList) : (array) $ruleList;
+            if (in_array('confirmed', $normalized, true)) {
+                $confirmField = $field.'_confirmation';
+                if (! isset($rules[$confirmField])) {
+                    $confirmRules = array_values(array_filter($normalized, fn ($r): bool => $r !== 'confirmed'));
+                    $rules[$confirmField] = $confirmRules;
+                }
+            }
+        }
+
+        return $rules;
     }
 
     protected function renderTree(array $tree, int $indent): string

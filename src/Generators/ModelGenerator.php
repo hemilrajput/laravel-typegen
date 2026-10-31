@@ -94,42 +94,90 @@ class ModelGenerator
             }
         }
 
-        if (! Schema::hasTable($table)) {
-            throw new \RuntimeException("Table [{$table}] does not exist. Please migrate your database before generating types.");
-        }
-
-        $dbColumns = Schema::getColumns($table);
         $casts = $model->getCasts();
         $hidden = $model->getHidden();
         $includeHidden = $this->config['include_hidden'] ?? false;
+        $hasTable = Schema::hasTable($table);
 
-        // 1. Process Database Columns
-        foreach ($dbColumns as $dbColumn) {
-            $attr = $dbColumn['name'];
-
-            if (in_array($attr, $ignore, true)) {
-                continue;
-            }
-            if (! $includeHidden && in_array($attr, $hidden, true)) {
-                continue;
+        if (! $hasTable) {
+            if ($this->config['strict_schema'] ?? true) {
+                throw new \RuntimeException("Table [{$table}] does not exist. Please migrate your database before generating types.");
             }
 
-            if (isset($casts[$attr])) {
-                $baseType = $this->mapper->toTypeScript($casts[$attr]);
-            } else {
-                $baseType = $this->dbTypeToTypeScript($dbColumn['type_name']);
+            // Fallback mode without database table
+            $keyName = $model->getKeyName();
+            if ($keyName && ! in_array($keyName, $ignore, true) && ! isset($fields[$keyName])) {
+                $keyType = $model->getKeyType() === 'int' ? 'number' : 'string';
+                $fields[$keyName] = "readonly {$keyType}";
             }
 
-            $readonly = $model->isFillable($attr) ? '' : 'readonly ';
+            foreach ($model->getFillable() as $attr) {
+                if (in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $includeHidden && in_array($attr, $hidden, true)) {
+                    continue;
+                }
+                if (! isset($fields[$attr])) {
+                    $baseType = isset($casts[$attr]) ? $this->mapper->toTypeScript($casts[$attr]) : 'string';
+                    $fields[$attr] = $baseType;
+                }
+            }
 
-            $tsType = (($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType);
+            foreach ($casts as $attr => $cast) {
+                if (in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $includeHidden && in_array($attr, $hidden, true)) {
+                    continue;
+                }
+                if (! isset($fields[$attr])) {
+                    $readonly = $model->isFillable($attr) ? '' : 'readonly ';
+                    $fields[$attr] = $readonly.$this->mapper->toTypeScript($cast);
+                }
+            }
 
-            // If it's already defined via PHPDoc, don't overwrite the type but we can keep the readonly modifier logic.
-            if (! isset($fields[$attr])) {
-                $fields[$attr] = $readonly.$tsType;
-            } elseif (! str_starts_with($fields[$attr], 'readonly ') && $readonly) {
-                // Prepend readonly if not already present
-                $fields[$attr] = $readonly.$fields[$attr];
+            if (($this->config['include_timestamps'] ?? true) && $model->usesTimestamps()) {
+                $created = $model->getCreatedAtColumn();
+                $updated = $model->getUpdatedAtColumn();
+                if ($created && ! isset($fields[$created])) {
+                    $fields[$created] = 'readonly string | null';
+                }
+                if ($updated && ! isset($fields[$updated])) {
+                    $fields[$updated] = 'readonly string | null';
+                }
+            }
+        } else {
+            $dbColumns = Schema::getColumns($table);
+
+            // 1. Process Database Columns
+            foreach ($dbColumns as $dbColumn) {
+                $attr = $dbColumn['name'];
+
+                if (in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $includeHidden && in_array($attr, $hidden, true)) {
+                    continue;
+                }
+
+                if (isset($casts[$attr])) {
+                    $baseType = $this->mapper->toTypeScript($casts[$attr]);
+                } else {
+                    $baseType = $this->dbTypeToTypeScript($dbColumn['type_name']);
+                }
+
+                $readonly = $model->isFillable($attr) ? '' : 'readonly ';
+
+                $tsType = (($dbColumn['nullable'] ?? false) ? "{$baseType} | null" : $baseType);
+
+                // If it's already defined via PHPDoc, don't overwrite the type but we can keep the readonly modifier logic.
+                if (! isset($fields[$attr])) {
+                    $fields[$attr] = $readonly.$tsType;
+                } elseif (! str_starts_with($fields[$attr], 'readonly ') && $readonly) {
+                    // Prepend readonly if not already present
+                    $fields[$attr] = $readonly.$fields[$attr];
+                }
             }
         }
 

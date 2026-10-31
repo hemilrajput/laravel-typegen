@@ -23,13 +23,17 @@ class GenerateCommand extends Command
     protected $signature = 'typescript:generate
                             {--dry-run : Print output instead of writing}
                             {--watch : Keep running and watch for file changes}
-                            {--check : Check if the generated types match the existing file (useful for CI)}';
+                            {--check : Check if the generated types match the existing file (useful for CI)}
+                            {--skip-db-check : Fallback to fillable and casts when database tables are missing}';
 
     protected $description = 'Generate TypeScript types from Laravel models, enums, and form requests.';
 
     public function handle(ClassScanner $classScanner, CastTypeMapper $castTypeMapper): int
     {
         $config = config('typegen');
+        if ($this->option('skip-db-check')) {
+            $config['strict_schema'] = false;
+        }
 
         $writer = isset($config['output']['split']) && $config['output']['split']
             ? new TypeScriptSplitWriter($config)
