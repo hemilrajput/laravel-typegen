@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-10-31
+
+### Fixed
+- Fixed PHPStan static analysis issues regarding array offset null checks and class enum type verification.
+- Applied Rector modernizations (`File::delete` in place of `unlink`).
+- Restored immutable tag reference for `v2.3.0` to resolve Packagist version synchronization block.
+- Updated documentation for live database schema inspection and offline fallbacks.
+
 ## [2.3.0] - 2026-10-31
 
 ### Added

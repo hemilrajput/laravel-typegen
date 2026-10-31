@@ -21,7 +21,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started', activeMatch: '/guide/' },
       { text: 'Recipes', link: '/recipes/inertia', activeMatch: '/recipes/' },
       {
-        text: 'v2.3.0',
+        text: 'v2.3.1',
         items: [
           { text: 'Changelog', link: 'https://github.com/hemilrajput/laravel-typegen/blob/main/CHANGELOG.md' },
           { text: 'NPM Helpers', link: 'https://www.npmjs.com/package/@hemilrajput/laravel-typegen-helpers' },
