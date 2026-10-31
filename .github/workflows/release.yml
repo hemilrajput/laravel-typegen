@@ -33,7 +33,33 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: softprops/action-gh-release@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract Release Notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 -c "
+          import sys
+          version = sys.argv[1]
+          with open('CHANGELOG.md', 'r') as f:
+              lines = f.readlines()
+          recording = False
+          output = []
+          for line in lines:
+              if line.startswith(f'## [{version}]'):
+                  recording = True
+                  continue
+              elif recording and line.startswith('## ['):
+                  break
+              if recording:
+                  output.append(line)
+          with open('RELEASE_NOTES.md', 'w') as f:
+              f.writelines(output)
+          " "$VERSION"
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
         with:
+          body_path: RELEASE_NOTES.md
           generate_release_notes: true
