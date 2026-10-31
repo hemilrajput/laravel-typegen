@@ -4,7 +4,7 @@ Laravel TypeGen works wonderfully with Inertia.js, giving you end-to-end type sa
 
 ## Basic Setup
 
-Once you've generated your types using `php artisan typegen:generate`, you can import them directly into your frontend components.
+Once you've generated your types using `php artisan typescript:generate`, you can import them directly into your frontend components.
 
 ### React Example
 

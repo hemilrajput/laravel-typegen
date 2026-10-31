@@ -58,7 +58,20 @@ The published `config/typegen.php` configuration provides a simple but powerful 
 | `output.zod` | `false` | When `true`, compiles Zod validation schemas alongside TypeScript types. |
 | `include_timestamps`| `true` | Includes `created_at` and `updated_at` automatically. |
 | `include_hidden` | `false` | When `false`, excludes columns listed in your model's `$hidden` property. |
+| `strict_schema` | `true` | Throws `RuntimeException` if a database table does not exist. Set `false` for DB-less CI builds. |
+| `routes.ziggy` | `true` | When `true`, emits `declare module 'ziggy-js'` with typed `RouteList` and `RouteParamsMap`. |
 | `relations.wrap_with_relation` | `true` | Wraps relationship properties in optional helpers for clarity. |
+
+---
+
+### Command Flags
+
+| Flag | Description |
+| :--- | :--- |
+| `--dry-run` | Output generated TypeScript to console without writing to disk. |
+| `--check` | Fail with exit code 1 if generated types do not match files on disk (ideal for CI pipelines). |
+| `--skip-db-check` | Bypass strict table existence checks and fallback to `$fillable`, `$casts`, and PHPDoc types. |
+| `--watch` | Watch files and auto-regenerate on changes. |
 
 ---
 

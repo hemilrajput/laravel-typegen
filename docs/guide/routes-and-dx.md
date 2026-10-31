@@ -35,6 +35,25 @@ If a route contains an optional parameter (like `{comment?}`), it will be marked
 T extends 'posts.comments' ? { post: number; comment?: number } :
 ```
 
+### Ziggy Route Integration
+When `routes.ziggy` is enabled in configuration (default), TypeGen generates typed `RouteParamsMap` and `declare module 'ziggy-js'` declarations:
+
+```typescript
+export type RouteParamsMap = {
+  'users.index': {};
+  'users.show': { user: number };
+};
+
+declare module 'ziggy-js' {
+  interface RouteList {
+    'users.index': [];
+    'users.show': [{ name: 'user', required: true }];
+  }
+}
+```
+
+This provides instant IntelliSense autocompletion and strict parameter checking when using Ziggy's `route()` helper in your Inertia, React, or Vue components.
+
 ---
 
 ## CI / CD Safety Gates
@@ -45,6 +64,15 @@ php artisan typescript:generate --check
 ```
 
 Instead of writing to disk, this performs an in-memory generation and precisely compares the output against your existing physical files (supporting both single-file and split-mode). If the generated types differ, the command fails with exit code `1`. You can easily add this to your GitHub Actions pipeline to enforce type synchronization!
+
+### DB-less CI Builds
+If your CI pipeline verifies types before database migrations have run, use the `--skip-db-check` flag (or configure `'strict_schema' => false` in `config/typegen.php`):
+
+```bash
+php artisan typescript:generate --check --skip-db-check
+```
+
+This prevents `RuntimeException: Table does not exist` exceptions and falls back to `$fillable`, `$casts`, and PHPDoc `@property` definitions.
 
 ---
 

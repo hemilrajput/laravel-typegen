@@ -10,6 +10,16 @@ The generator maps Eloquent attributes using the following precedence rules:
 3. **Fillable attributes**: Columns listed in `$fillable` that are not cast are assumed to be of type `string`.
 4. **Timestamps**: If `$timestamps` is enabled, `created_at` and `updated_at` (or custom columns) are automatically generated as `string`.
 
+### Live Schema Inspection & Offline Fallback
+
+TypeGen queries your live database tables using `Schema::getColumns()` to extract exact column types, nullability, and database defaults.
+
+If your database tables are not yet migrated (or when running in offline CI environments):
+- Pass the `--skip-db-check` CLI option, or
+- Set `'strict_schema' => false` in `config/typegen.php`
+
+When strict schema checking is bypassed, TypeGen gracefully falls back to inspecting `$fillable`, `$casts`, and PHPDoc `@property` annotations without failing.
+
 ## Customizing Names
 
 By default, the interface name matches the PHP class name. You can customize the name of the exported interface by passing a parameter to the attribute:

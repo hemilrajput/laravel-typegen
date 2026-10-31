@@ -88,6 +88,8 @@ export interface StorePostRequest {
 * **Nullable** fields (`nullable`) are marked with `| null`.
 * **Optional/Sometimes** fields (`sometimes` or not marked `required`) are generated with a `?` modifier in TS.
 * **Enum validation rules** (like `new Enum(...)`) are automatically resolved to their corresponding TypeScript enum type name.
+* **Confirmed Fields**: Validations with `confirmed` (e.g. `'password' => ['required', 'confirmed']`) automatically emit `{field}_confirmation` in both the TypeScript interface and matching Zod schema.
+* **Password Rule Objects**: Native `Illuminate\Validation\Rules\Password` objects (e.g. `Password::min(12)`) are parsed as `string` and forward minimum length constraints.
 * **Dot Notation Objects**: Fields like `'author.name' => 'required|string'` are automatically nested into TS objects:
   ```typescript
   author: {
@@ -138,6 +140,9 @@ class UserResource extends JsonResource
 ### Advanced AST Parsing
 
 Instead of relying on fragile `@property` docblocks, TypeGen uses `nikic/php-parser` to statically analyze your `toArray()` method's Abstract Syntax Tree (AST):
-- Types are inferred dynamically from the properties accessed (e.g. `$this->id`).
+- Types are inferred dynamically from the properties accessed (e.g. `$this->id`, `$this->is_active`) and validated against your database schema columns.
 - Conditional fields wrapped in `$this->when()` or `$this->whenLoaded()` are automatically marked as optional (`?`) in the generated TypeScript.
 - Nested resources (`PostResource::collection(...)` or `new PostResource(...)`) correctly link to their respective TypeScript interfaces.
+- **Intelligent `whenLoaded()` Typing**: When calling `$this->whenLoaded('relation')`, TypeGen resolves the relation on the underlying model and generates typed targets (e.g. `Post[] | null` or `PostResource[] | null`) instead of defaulting to `any`.
+- **Custom Callback Evaluation**: Closures or arrow functions passed as the second argument to `whenLoaded('relation', fn () => ...)` are inspected and accurately typed.
+- **Explicit Model Association**: For resources with non-standard names, specify the underlying model using `#[TypeScript(model: User::class)]` or PHPDoc `@mixin User`.
