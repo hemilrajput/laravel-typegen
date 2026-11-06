@@ -327,20 +327,44 @@ class ModelGenerator
             }
 
             $resolved = $this->resolver->resolve($modelClass, $relation);
+            $fieldName = $this->formatRelationName($relation);
 
             if ($resolved['error']) {
                 // Log warning, emit unknown
                 error_log("typegen: {$resolved['error']}");
-                $fields[$relation] = 'unknown';
+                $fields[$fieldName] = 'unknown';
 
                 continue;
             }
 
             $type = $this->relationToType($resolved, $discovered);
-            $fields[$relation] = $type;
+            $fields[$fieldName] = $type;
         }
 
         return ['fields' => $fields, 'discovered' => $discovered];
+    }
+
+    protected function formatRelationName(string $relation): string
+    {
+        $casing = $this->config['relations']['casing'] ?? 'camel';
+
+        $normalized = strtolower(str_replace(['-', '_', ' '], '', (string) $casing));
+
+        $name = match ($normalized) {
+            'pascal', 'pascalcase', 'studly' => Str::studly($relation),
+            'snake', 'snakecase' => Str::snake($relation),
+            'kebab', 'kebabcase' => Str::kebab($relation),
+            'raw', 'none' => $relation,
+            default => Str::camel($relation),
+        };
+
+        if (preg_match('/^[a-zA-Z_$][a-zA-Z0-9_$]*$/', $name)) {
+            return $name;
+        }
+
+        $trimmed = trim($name, "'\"");
+
+        return "'{$trimmed}'";
     }
 
     protected function relationToType(array $resolved, array &$discovered): string
