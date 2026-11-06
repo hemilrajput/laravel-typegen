@@ -62,6 +62,7 @@ The published `config/typegen.php` configuration provides a simple but powerful 
 | `strict_schema` | `true` | Throws `RuntimeException` if a database table does not exist. Set `false` for DB-less CI builds. |
 | `routes.ziggy` | `true` | When `true`, emits `declare module 'ziggy-js'` with typed `RouteList` and `RouteParamsMap`. |
 | `relations.wrap_with_relation` | `true` | Wraps relationship properties in optional helpers for clarity. |
+| `relations.casing` | `'camel'` | Casing for relation properties: `'camel'`, `'pascal'`, `'snake'`, or `'kebab'`. |
 
 ---
 

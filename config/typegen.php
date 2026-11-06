@@ -85,11 +85,12 @@ return [
 
     /*
     |---------------------------------------------------------------------
-    | Relations wrapping
+    | Relations wrapping & naming
     |---------------------------------------------------------------------
     */
     'relations' => [
         'wrap_with_relation' => true,
+        'casing' => 'camel', // "camel" | "pascal" | "snake" | "kebab"
     ],
 
     /*
