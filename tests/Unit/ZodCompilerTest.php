@@ -9,6 +9,7 @@ it('compiles flat rules into a Zod schema', function (): void {
     $tree = (new RuleTree)->build([
         'title' => ['required', 'string'],
         'age' => ['integer', 'nullable'],
+        'bio' => ['required', 'string', 'nullable'],
         'is_active' => ['boolean'],
     ]);
 
@@ -17,6 +18,7 @@ it('compiles flat rules into a Zod schema', function (): void {
 
     expect($zod)->toContain('title: z.string(),');
     expect($zod)->toContain('age: z.number().nullish(),');
+    expect($zod)->toContain('bio: z.string().nullable(),');
     expect($zod)->toContain('is_active: z.boolean().optional(),');
 });
 

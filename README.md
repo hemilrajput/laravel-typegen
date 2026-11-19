@@ -138,7 +138,8 @@ Without a morph map, emits `unknown | null` with a comment.
 
 - [x] **v2.3.1**: AST Resource extraction, DB-less CI fallback (`--skip-db-check`), Ziggy route typing.
 - [x] **v2.3.2**: Release process hardening (gated tag CI), security policy, metadata consistency, and `.gitattributes`.
-- [ ] **v2.4.0**: CI hardening (PHP 8.5, prefer-lowest, Windows, coverage baseline), contract tests (`tsc --strict` compilation on generated output), deprecation warnings.
+- [x] **v2.4.0**: Required/nullable decoupling fix, sandboxed FormRequest evaluation & AST static extraction fallback, inferred Zod payload types (`z.infer`).
+- [ ] **v2.5.0**: Eloquent relationship depth (pivot table typing for BelongsToMany, withCount/withExists virtual attributes, BelongsTo nullability resolution).
 - [ ] **v3.0.0-rc.1 / v3.0.0**: Minimum PHP 8.3, Laravel 12/13 baseline, opt-in/auto-detected Ziggy vs Wayfinder interop, frozen public API.
 
 ## Configuration

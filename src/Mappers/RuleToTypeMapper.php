@@ -92,7 +92,7 @@ class RuleToTypeMapper
 
         return [
             'type' => $type,
-            'required' => $required && ! $nullable,
+            'required' => $required,
             'nullable' => $nullable,
             'enum_class' => $enumClass,
             'constraints' => $constraints,

@@ -15,6 +15,11 @@ it('maps nullable integer', function (): void {
         ->toMatchArray(['type' => 'number', 'required' => false, 'nullable' => true]);
 });
 
+it('handles required nullable fields with required key and nullable value', function (): void {
+    expect($this->mapper->map(['required', 'nullable', 'string']))
+        ->toMatchArray(['type' => 'string', 'required' => true, 'nullable' => true]);
+});
+
 it('maps in: rule to union', function (): void {
     expect($this->mapper->map(['required', 'in:draft,published,archived']))
         ->toMatchArray(['type' => "'draft' | 'published' | 'archived'", 'required' => true]);

@@ -52,6 +52,23 @@ class RegisterUserRequest extends FormRequest
 }
 
 #[TypeScript]
+class RuntimeDependentRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        // This throws at runtime because route('item') doesn't have an id property
+        if ($this->route('item')->nonExistentMethod()) {
+            return [];
+        }
+
+        return [
+            'slug' => ['required', 'string'],
+            'category_id' => ['required', 'integer'],
+        ];
+    }
+}
+
+#[TypeScript]
 class UnmigratedItem extends Model
 {
     protected $table = 'unmigrated_items';
@@ -104,7 +121,21 @@ it('automatically expands confirmed rule into confirmation field and respects Pa
         // Zod schema contains both with .min(12) constraint extracted from Password object
         ->and($content)->toContain('export const RegisterUserRequestSchema')
         ->and($content)->toContain('password: z.string().min(12),')
-        ->and($content)->toContain('password_confirmation: z.string().min(12),');
+        ->and($content)->toContain('password_confirmation: z.string().min(12),')
+        ->and($content)->toContain('export type RegisterUserRequestPayload = z.infer<typeof RegisterUserRequestSchema>;');
+});
+
+it('extracts FormRequest rules via AST when rules method throws runtime exception', function (): void {
+    $generator = new FormRequestGenerator(
+        new RuleToTypeMapper,
+        new RuleTree,
+        config('typegen'),
+    );
+    $content = $generator->generate(RuntimeDependentRequest::class);
+
+    expect($content)->toContain('export interface RuntimeDependentRequest')
+        ->and($content)->toContain('slug: string;')
+        ->and($content)->toContain('category_id: number;');
 });
 
 it('throws RuntimeException when database table does not exist in strict mode', function (): void {

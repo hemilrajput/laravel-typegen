@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-11-19
+
+### Added
+- **Sandboxed FormRequest Evaluation**: Injected mock route and user resolvers within the container during request reflection to prevent runtime exceptions when `rules()` inspects route parameters or authentication context.
+- **AST Static Rule Extraction Fallback**: Introduced `FormRequestAstVisitor` via `nikic/php-parser` as an automated static analysis fallback for `rules()` whenever runtime reflection throws an exception.
+- **Inferred Zod Payloads**: Automatically emits `export type {Name}Payload = z.infer<typeof {Name}Schema>;` alongside generated Zod schemas for end-to-end type inference in frontend forms.
+
+### Fixed
+- **Required Nullable Key Decoupling**: Fixed `RuleToTypeMapper` logic where required-nullable validation rules incorrectly marked keys as optional (`?`). Validation rules like `required|nullable` now accurately emit mandatory keys with nullable union values (`field: string | null;`) and `z.string().nullable()`.
+
 ## [2.3.2] - 2026-10-31
 
 ### Changed

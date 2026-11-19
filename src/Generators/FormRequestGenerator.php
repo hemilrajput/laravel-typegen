@@ -6,7 +6,16 @@ use Hemilrajput\TypeGen\Attributes\TypeScript;
 use Hemilrajput\TypeGen\Compilers\ZodCompiler;
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
 use Hemilrajput\TypeGen\Mappers\RuleTree;
+use Hemilrajput\TypeGen\Scanners\FormRequestAstVisitor;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Identifier;
+use PhpParser\Node\Scalar\String_;
+use PhpParser\NodeTraverser;
+use PhpParser\ParserFactory;
 use ReflectionClass;
 
 class FormRequestGenerator
@@ -26,13 +35,17 @@ class FormRequestGenerator
         $name = $this->resolveName($reflectionClass);
 
         try {
-            $rules = $this->extractRules($requestClass);
+            $rules = $this->extractRules($requestClass, $reflectionClass);
         } catch (\Throwable $e) {
             throw new \RuntimeException("Failed to extract rules from FormRequest [{$requestClass}]. If your rules() method depends on request state (e.g., \$this->route()), it cannot be statically analyzed. Error: ".$e->getMessage(), 0, $e);
         }
 
         if ($rules === []) {
-            return "export interface {$name} {}".($this->config['output']['zod'] ?? false ? "\nexport const {$name}Schema = z.object({});" : '');
+            $zodSuffix = ($this->config['output']['zod'] ?? false)
+                ? "\nexport const {$name}Schema = z.object({});\nexport type {$name}Payload = z.infer<typeof {$name}Schema>;"
+                : '';
+
+            return "export interface {$name} {}{$zodSuffix}";
         }
 
         $tree = $this->tree->build($rules);
@@ -43,6 +56,7 @@ class FormRequestGenerator
         if ($this->config['output']['zod'] ?? false) {
             $zodBody = $this->zodCompiler->compile($tree, indent: 2);
             $output .= "\n\nexport const {$name}Schema = z.object({\n{$zodBody}\n});";
+            $output .= "\nexport type {$name}Payload = z.infer<typeof {$name}Schema>;";
         }
 
         return $output;
@@ -56,16 +70,82 @@ class FormRequestGenerator
         return $override ?? $reflectionClass->getShortName();
     }
 
-    protected function extractRules(string $requestClass): array
+    protected function extractRules(string $requestClass, ReflectionClass $reflectionClass): array
     {
-        /** @var FormRequest $instance */
-        $instance = new $requestClass;
+        $instance = null;
+        if (function_exists('app')) {
+            try {
+                $instance = app()->make($requestClass);
+            } catch (\Throwable) {
+                // Ignore and fall back to new
+            }
+        }
+        $instance ??= new $requestClass;
+
+        if ($instance instanceof FormRequest) {
+            if (function_exists('app')) {
+                $instance->setContainer(app());
+            }
+
+            // Set sandboxed route resolver
+            $instance->setRouteResolver(function ($param = null): object {
+                if ($param === null) {
+                    return new class
+                    {
+                        public function parameter($key = null, $default = null)
+                        {
+                            return $default ?? '1';
+                        }
+
+                        public function __call(string $name, array $args)
+                        {
+                            return '1';
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return '1';
+                        }
+                    };
+                }
+
+                return new class
+                {
+                    public function __call(string $name, array $args)
+                    {
+                        return '1';
+                    }
+
+                    public function __get(string $name): mixed
+                    {
+                        return '1';
+                    }
+
+                    public function __toString(): string
+                    {
+                        return '1';
+                    }
+                };
+            });
+
+            // Set sandboxed user resolver
+            $instance->setUserResolver(fn (): null => null);
+        }
 
         if (! method_exists($instance, 'rules')) {
             return [];
         }
 
-        $rules = $instance->rules();
+        try {
+            $rules = $instance->rules();
+        } catch (\Throwable $e) {
+            $astRules = $this->extractRulesFromAst($requestClass, $reflectionClass);
+            if ($astRules !== null) {
+                $rules = $astRules;
+            } else {
+                throw $e;
+            }
+        }
 
         foreach ($rules as $field => $ruleList) {
             $normalized = is_string($ruleList) ? explode('|', $ruleList) : (array) $ruleList;
@@ -79,6 +159,89 @@ class FormRequestGenerator
         }
 
         return $rules;
+    }
+
+    protected function extractRulesFromAst(string $requestClass, ReflectionClass $reflectionClass): ?array
+    {
+        $fileName = $reflectionClass->getFileName();
+        if (! $fileName || ! file_exists($fileName)) {
+            return null;
+        }
+
+        if (! $reflectionClass->hasMethod('rules')) {
+            return [];
+        }
+
+        try {
+            $code = file_get_contents($fileName);
+            $parser = (new ParserFactory)->createForNewestSupportedVersion();
+            $ast = $parser->parse($code);
+
+            $visitor = new FormRequestAstVisitor;
+            $traverser = new NodeTraverser;
+            $traverser->addVisitor($visitor);
+            $traverser->traverse($ast);
+
+            if (! $visitor->rulesReturn instanceof Array_) {
+                return null;
+            }
+
+            return $this->parseAstRulesArray($visitor->rulesReturn);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    protected function parseAstRulesArray(Array_ $array): array
+    {
+        $rules = [];
+        foreach ($array->items as $item) {
+            if (! $item->key instanceof String_) {
+                continue;
+            }
+            $field = $item->key->value;
+            $rules[$field] = $this->parseAstRuleValue($item->value);
+        }
+
+        return $rules;
+    }
+
+    protected function parseAstRuleValue(Expr $expr): mixed
+    {
+        if ($expr instanceof String_) {
+            return $expr->value;
+        }
+
+        if ($expr instanceof Array_) {
+            $itemRules = [];
+            foreach ($expr->items as $item) {
+                if ($item->value instanceof String_) {
+                    $itemRules[] = $item->value->value;
+                } elseif ($item->value instanceof StaticCall) {
+                    $method = $item->value->name instanceof Identifier ? $item->value->name->toString() : '';
+                    if ($method === 'in' && isset($item->value->args[0]) && $item->value->args[0]->value instanceof Array_) {
+                        $values = [];
+                        foreach ($item->value->args[0]->value->items as $inItem) {
+                            if ($inItem->value instanceof String_) {
+                                $values[] = $inItem->value->value;
+                            }
+                        }
+                        if ($values !== []) {
+                            $itemRules[] = Rule::in($values);
+
+                            continue;
+                        }
+                    }
+                    $itemRules[] = 'string';
+                } else {
+                    $itemRules[] = 'string';
+                }
+            }
+
+            return $itemRules;
+        }
+
+        return 'string';
     }
 
     protected function renderTree(array $tree, int $indent): string
