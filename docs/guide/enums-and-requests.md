@@ -84,9 +84,10 @@ export interface StorePostRequest {
 ```
 
 ### Rule-to-Type Rules
-* **Required** fields (`required`) are generated as non-optional keys in TS.
+* **Required** fields (`required`) are generated as non-optional keys in TS (e.g. `title: string;`).
+* **Required & Nullable**: Decoupled cleanly. Rules like `['required', 'nullable', 'string']` generate mandatory keys with nullable union values (`field: string | null;`) and `z.string().nullable()` rather than making the key optional.
 * **Nullable** fields (`nullable`) are marked with `| null`.
-* **Optional/Sometimes** fields (`sometimes` or not marked `required`) are generated with a `?` modifier in TS.
+* **Optional/Sometimes** fields (`sometimes` or not marked `required`) are generated with a `?` modifier in TS (e.g. `field?: string | null;`).
 * **Enum validation rules** (like `new Enum(...)`) are automatically resolved to their corresponding TypeScript enum type name.
 * **Confirmed Fields**: Validations with `confirmed` (e.g. `'password' => ['required', 'confirmed']`) automatically emit `{field}_confirmation` in both the TypeScript interface and matching Zod schema.
 * **Password Rule Objects**: Native `Illuminate\Validation\Rules\Password` objects (e.g. `Password::min(12)`) are parsed as `string` and forward minimum length constraints.
@@ -103,8 +104,27 @@ export interface StorePostRequest {
   }[]
   ```
 
-### Zod Schemas & Advanced Constraints
-If you enable Zod schema generation (`'zod' => true` in config), TypeGen will emit Zod schemas alongside your interfaces for runtime client-side validation.
+### Sandboxed Runtime & AST Fallback
+FormRequests that depend on request state (e.g., `$this->route('user')` or `$this->user()`) are safely handled:
+1. **Container Isolation**: TypeGen binds mock route resolvers and user resolvers into the Laravel container during reflection.
+2. **Static AST Analysis Fallback**: If runtime evaluation still throws an exception (such as missing database records or unresolvable services), TypeGen automatically falls back to Abstract Syntax Tree (AST) extraction via `nikic/php-parser` (`FormRequestAstVisitor`) so type generation never crashes.
+
+### Zod Schemas & Inferred Payload Types
+If you enable Zod schema generation (`'zod' => true` in config), TypeGen emits Zod schemas alongside your interfaces for runtime client-side validation, as well as inferred payload type aliases:
+
+```typescript
+export interface StorePostRequest {
+  title: string;
+  body: string;
+}
+
+export const StorePostRequestSchema = z.object({
+  title: z.string().max(120),
+  body: z.string(),
+});
+
+export type StorePostRequestPayload = z.infer<typeof StorePostRequestSchema>;
+```
 
 TypeGen extracts advanced validation constraints from your rules to build powerful schemas:
 - `email` generates `.email()`
