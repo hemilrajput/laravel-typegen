@@ -1,38 +1,77 @@
 # Laravel TypeGen
 
-> **Laravel TypeGen** — one artisan command turns your Eloquent models, Enums, and FormRequests into a single typed `.ts` file. No more hand-syncing PHP and TypeScript.
+> **Zero-DB CI Extraction + Automatic Zod Validation Schemas & TypeScript Types** directly from Eloquent models, Enums, FormRequests, and API Resources. Built for the modern Laravel + Inertia (React/Vue) stack.
 
 ## 📖 Documentation
 For complete documentation, guides, and setup instructions, visit [laravel-typegen.github.io](https://hemilrajput.github.io/laravel-typegen/).
 
 ## Why Laravel TypeGen?
-- **Keeps types in sync**: Automatically reflect changes in your PHP models in your TypeScript interfaces.
-Generate TypeScript types from Eloquent models, Enums, and FormRequests. Built for the Laravel 13 + Inertia + React/Vue stack.
+- **Zero-DB CI Extraction**: Generate strict TypeScript interfaces in offline CI pipelines (`--skip-db-check`) without spinning up database containers.
+- **Automatic Zod Validation**: Compile FormRequest `rules()` directly into frontend Zod schemas (`z.object({...})`) and inferred payloads (`z.infer`).
+- **Synchronized Architecture**: Automatically link PHP Enums to Model casts and relationship graphs across frontend and backend.
 
 ---
 
-## ⚡️ The Killer Feature: Synchronized Types
-Laravel TypeGen doesn't just generate standalone interfaces. It understands your application's logic.
+## ⚡️ The Killer Features
 
-**PHP Enum + Model Cast:**
+### 1. Synchronized PHP Enum + Model Casts
 ```php
-enum UserRole: string {
+enum UserRole: string
+{
     case Admin = 'admin';
 }
 
-class User extends Model {
-    protected $casts = ['role' => UserRole::class];
+class User extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'role' => UserRole::class,
+        ];
+    }
 }
 ```
 
-**TypeScript Output:**
 ```ts
 export type UserRole = 'admin';
 
 export interface User {
-    id: number;
-    role: UserRole; // Automatically linked!
+  id: number;
+  role: UserRole; // Automatically linked!
 }
+```
+
+### 2. FormRequest → TypeScript DTO & Zod Schema (Zero-DB CI)
+```php
+#[TypeScript]
+class StorePostRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:120'],
+            'status' => ['required', new Enum(PostStatus::class)],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
+        ];
+    }
+}
+```
+
+```ts
+export interface StorePostRequest {
+  title: string;
+  status: PostStatus;
+  tags?: string[] | null;
+}
+
+export const StorePostRequestSchema = z.object({
+  title: z.string().max(120),
+  status: z.enum(['draft', 'published']),
+  tags: z.array(z.string()).nullish(),
+});
+
+export type StorePostRequestPayload = z.infer<typeof StorePostRequestSchema>;
 ```
 
 ---
