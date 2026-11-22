@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import TypeGenGuardWaitlist from './components/TypeGenGuardWaitlist.vue'
 
 /* ── Intersection-based reveal ─────────────────── */
 const visible = ref(new Set<string>())
@@ -110,7 +111,7 @@ const FEATURES = [
 
 /* ── Stats ─────────────────────────────────────── */
 const STATS = [
-  { val: '54',  label: 'Tests passing', color: '#22c55e' },
+  { val: '67',  label: 'Tests passing', color: '#22c55e' },
   { val: '~0',  label: 'Config needed', color: '#FF2D20' },
   { val: '8',   label: 'Generators',    color: '#3178C6' },
   { val: 'MIT', label: 'License',       color: '#fbbf24' },
@@ -272,6 +273,11 @@ const STATS = [
 
     </div>
   </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECTION: TYPEGEN GUARD WAITLIST
+  ══════════════════════════════════════════════════════ -->
+  <TypeGenGuardWaitlist />
 
   <!-- ══════════════════════════════════════════════════════
        SECTION 3: CTA

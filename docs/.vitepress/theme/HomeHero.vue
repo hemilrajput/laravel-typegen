@@ -460,16 +460,20 @@ onBeforeUnmount(() => {
 
     <div class="hero-body">
 
-      <!-- ── BADGE ── -->
-      <a href="https://github.com/hemilrajput/laravel-typegen/blob/main/CHANGELOG.md"
-         class="hero-badge" target="_blank" rel="noopener"
-         style="--d:0.05s">
-        <span class="badge-dot"/>
-        v2.4.0 — What's new
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M2.5 6.5h7M7 3l3 3.5-3 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </a>
+      <!-- ── BADGES ── -->
+      <div class="hero-badges" style="--d:0.05s">
+        <a href="https://github.com/hemilrajput/laravel-typegen/blob/main/CHANGELOG.md"
+           class="hero-badge" target="_blank" rel="noopener">
+          <span class="badge-dot"/>
+          v2.4.0 — What's new
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2.5 6.5h7M7 3l3 3.5-3 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#guard-waitlist" class="guard-pill">
+          ✨ TypeGen Guard (PR Bot) — Join Waitlist →
+        </a>
+      </div>
 
       <!-- ── HEADLINE ── -->
       <h1 class="hero-h1" style="--d:0.12s">
@@ -681,7 +685,7 @@ onBeforeUnmount(() => {
                 <circle cx="6" cy="6" r="5" stroke="#22c55e" stroke-width="1.1"/>
                 <path d="M3.5 6l1.5 1.5L8.5 4" stroke="#22c55e" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              54 tests passing
+              67 tests passing
             </span>
             <span class="sf-stat">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -819,10 +823,11 @@ onBeforeUnmount(() => {
 }
 
 /* ── Staggered riseIn helper ── */
-.hero-badge, .hero-h1, .word-strip, .hero-sub, .hero-btns, .hero-meta, .transform-stage, .scroll-hint {
+.hero-badges, .hero-badge, .hero-h1, .word-strip, .hero-sub, .hero-btns, .hero-meta, .transform-stage, .scroll-hint {
   opacity: 0; transform: translateY(22px);
   animation: riseIn 0.75s calc(var(--d, 0s)) cubic-bezier(0.34,1.2,0.64,1) both;
 }
+.tg-hero.shown .hero-badges,
 .tg-hero.shown .hero-badge,
 .tg-hero.shown .hero-h1,
 .tg-hero.shown .word-strip,
@@ -838,6 +843,14 @@ onBeforeUnmount(() => {
 }
 
 /* ── Badge ── */
+.hero-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
 .hero-badge {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 7px 16px; border-radius: 100px;
@@ -845,10 +858,25 @@ onBeforeUnmount(() => {
   color: var(--vp-c-text-2);
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-border);
-  text-decoration: none; margin-bottom: 28px;
+  text-decoration: none;
   transition: border-color 0.2s, color 0.2s, transform 0.2s;
 }
 .hero-badge:hover { border-color: rgba(255,45,32,0.4); color: var(--vp-c-text-1); transform: translateY(-2px); }
+.guard-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 16px; border-radius: 100px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border: 1px solid var(--vp-c-brand-soft);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.guard-pill:hover {
+  background: var(--vp-c-brand-1);
+  color: #fff;
+  transform: translateY(-2px);
+}
 .badge-dot {
   width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0;
   animation: pulseDot 2.4s ease infinite;
