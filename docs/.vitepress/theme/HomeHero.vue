@@ -465,7 +465,7 @@ onBeforeUnmount(() => {
          class="hero-badge" target="_blank" rel="noopener"
          style="--d:0.05s">
         <span class="badge-dot"/>
-        v2.2.3 — What's new
+        v2.4.0 — What's new
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M2.5 6.5h7M7 3l3 3.5-3 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>

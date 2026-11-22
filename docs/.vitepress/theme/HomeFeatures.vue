@@ -429,7 +429,7 @@ const STATS = [
     <div class="footer-bottom">
       <span>Released under the <strong>MIT License</strong>.</span>
       <span>Copyright © 2024–2026 Hemil Rajput</span>
-      <span class="footer-ver">v2.3.2</span>
+      <span class="footer-ver">v2.4.0</span>
     </div>
   </footer>
 </template>
