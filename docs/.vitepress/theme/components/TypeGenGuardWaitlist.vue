@@ -5,9 +5,8 @@ const email = ref('')
 const teamSize = ref('2-5')
 const status = ref<'idle' | 'submitting' | 'success' | 'error'>('idle')
 
-// Replace with your Formspree / Web3Forms / Supabase endpoint
 const FORM_ENDPOINT = 'https://api.web3forms.com/submit'
-const ACCESS_KEY = 'YOUR_PUBLIC_ACCESS_KEY'
+const ACCESS_KEY = '632f4791-8f11-45de-af40-6e9874f61e2d'
 
 async function joinWaitlist() {
   if (!email.value || status.value === 'submitting') return
@@ -20,11 +19,13 @@ async function joinWaitlist() {
       body: JSON.stringify({
         access_key: ACCESS_KEY,
         subject: 'New TypeGen Guard Waitlist Lead',
+        from_name: 'Laravel TypeGen Waitlist',
         email: email.value,
         team_size: teamSize.value,
       }),
     })
-    status.value = res.ok ? 'success' : 'error'
+    const data = await res.json().catch(() => null)
+    status.value = res.ok && data?.success !== false ? 'success' : 'error'
   } catch {
     status.value = 'error'
   }
