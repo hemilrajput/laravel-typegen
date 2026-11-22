@@ -10,6 +10,9 @@ class GenerateRoutesCommand extends Command
     protected $signature = 'typescript:routes
                             {--dry-run : Print output instead of writing}';
 
+    /** @var array<string> */
+    protected $aliases = ['typegen:routes'];
+
     protected $description = 'Generate TypeScript types for Laravel routes.';
 
     public function handle(): int

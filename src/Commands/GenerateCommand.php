@@ -26,6 +26,9 @@ class GenerateCommand extends Command
                             {--check : Check if the generated types match the existing file (useful for CI)}
                             {--skip-db-check : Fallback to fillable and casts when database tables are missing}';
 
+    /** @var array<string> */
+    protected $aliases = ['typegen:generate'];
+
     protected $description = 'Generate TypeScript types from Laravel models, enums, and form requests.';
 
     public function handle(ClassScanner $classScanner, CastTypeMapper $castTypeMapper): int

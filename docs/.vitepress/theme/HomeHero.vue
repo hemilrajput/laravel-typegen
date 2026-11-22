@@ -523,9 +523,9 @@ onBeforeUnmount(() => {
         <span class="msep"/>
         <span class="meta-i">Laravel 11–13</span>
         <span class="msep"/>
-        <span class="meta-i">PHP 8.3+</span>
+        <span class="meta-i">PHP 8.2+</span>
         <span class="msep"/>
-        <span class="meta-i"><span class="mdot b"/>54 tests passing</span>
+        <span class="meta-i"><span class="mdot b"/>67 tests passing</span>
       </div>
 
       <!-- ══════════════════════════════════════
@@ -552,7 +552,7 @@ onBeforeUnmount(() => {
               <span class="pulse-dot"/>
               live generation
             </span>
-            <span class="stage-cmd">php artisan typegen:generate</span>
+            <span class="stage-cmd">php artisan typescript:generate</span>
           </div>
         </div>
 
@@ -704,7 +704,7 @@ onBeforeUnmount(() => {
             <div class="sf-div"/>
             <div class="sf-cmd">
               <span class="sf-ps">$</span>
-              <code>php artisan typegen:generate</code>
+              <code>php artisan typescript:generate</code>
             </div>
           </div>
           <a href="/laravel-typegen/guide/getting-started" class="sf-cta">
