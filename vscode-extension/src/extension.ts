@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const OUTPUT_CHANNEL_NAME = 'Laravel TypeGen';
-const TYPESCRIPT_ATTRIBUTE = '#[TypeScript]';
+const TYPESCRIPT_ATTRIBUTE_PATTERN = /#\[TypeScript(?:\b|\()/;
 
 let output: vscode.OutputChannel;
 let statusBarItem: vscode.StatusBarItem;
@@ -44,14 +44,16 @@ function updateStatusBar(item: vscode.StatusBarItem) {
 function onDocumentSaved(doc: vscode.TextDocument) {
     if (!config<boolean>('enableOnSave', true)) return;
     if (doc.languageId !== 'php') return;
-    if (!fileContainsAttribute(doc)) return;
+
+    const isConfigFile = doc.fileName.replace(/\\/g, '/').endsWith('/config/typegen.php');
+    if (!isConfigFile && !fileContainsAttribute(doc)) return;
 
     runGenerate();
 }
 
 function fileContainsAttribute(doc: vscode.TextDocument): boolean {
     const text = doc.getText();
-    return text.includes(TYPESCRIPT_ATTRIBUTE);
+    return TYPESCRIPT_ATTRIBUTE_PATTERN.test(text);
 }
 
 function runGenerate() {

@@ -32,11 +32,22 @@ export interface SimplePaginatedResponse<T> {
     links: Pick<PaginationLinks, 'prev' | 'next'>;
 }
 
+/** Matches the shape of `cursorPaginate()`. */
+export interface CursorPaginatedResponse<T> {
+    data: T[];
+    path: string;
+    per_page: number;
+    next_cursor: string | null;
+    next_page_url: string | null;
+    prev_cursor: string | null;
+    prev_page_url: string | null;
+}
+
 // ─────────────────────────────────────────────
 // Inertia.js Form Helpers
 // ─────────────────────────────────────────────
 
-/** Mirrors the Inertia `useForm()` return shape for typed forms. */
+/** Mirrors the Inertia `useForm()` return shape for typed forms (v1 & v2 compatible). */
 export interface InertiaForm<TData extends Record<string, unknown>> {
     data: TData;
     errors: Partial<Record<keyof TData, string>>;
@@ -46,6 +57,9 @@ export interface InertiaForm<TData extends Record<string, unknown>> {
     wasSuccessful: boolean;
     recentlySuccessful: boolean;
     isDirty: boolean;
+    defaults?: TData | ((field?: keyof TData, value?: unknown) => void);
+    setDefaults?: (fieldOrFields?: keyof TData | Partial<TData>, value?: unknown) => void;
+    cancel?: () => void;
     reset(...fields: (keyof TData)[]): void;
     clearErrors(...fields: (keyof TData)[]): void;
     setError(field: keyof TData, value: string): void;
@@ -87,16 +101,22 @@ export interface ApiResourceCollection<T> {
 
 /**
  * Mirrors the `Relation<T>` helper emitted by laravel-typegen when
- * `relations.wrap_with_relation` is enabled.
- *
- * - `null`      → relation is known to be empty / deleted
- * - `undefined` → relation was not eager-loaded
- * - `T | T[]`   → relation was loaded
+ * `relations.wrap_with_relation` is enabled (e.g. `posts?: Relation<Post[]>`).
  */
-export type Relation<T> = T | T[] | null | undefined;
+export type Relation<T> = T;
 
 /** Narrows a `Relation<T>` to its loaded (non-null, non-undefined) form. */
-export type LoadedRelation<T> = T | T[];
+export type LoadedRelation<T> = NonNullable<T>;
+
+/** Type guard verifying an optional/nullable relation property was eager-loaded and non-null. */
+export function isRelationLoaded<T>(value: T | null | undefined): value is NonNullable<T> {
+    return value !== undefined && value !== null;
+}
+
+/** Unwraps a Laravel `JsonResource` `{ data: T }` response envelope. */
+export function unwrapResource<T>(response: ApiResource<T>): T {
+    return response.data;
+}
 
 // ─────────────────────────────────────────────
 // Utility types

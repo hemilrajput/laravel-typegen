@@ -12,9 +12,9 @@ pnpm add @hemilrajput/laravel-typegen-helpers
 
 ## Utilities
 
-### `PaginatedResponse<T>`
+### `PaginatedResponse<T>` / `CursorPaginatedResponse<T>`
 
-Mirrors `Model::paginate()` JSON shape.
+Mirrors `Model::paginate()` and `Model::cursorPaginate()` JSON shapes.
 
 ```ts
 import type { PaginatedResponse } from '@hemilrajput/laravel-typegen-helpers';
@@ -44,16 +44,21 @@ import type { ApiResource } from '@hemilrajput/laravel-typegen-helpers';
 const res: ApiResource<User> = await fetch('/api/users/1').then(r => r.json());
 ```
 
-### `Relation<T>`
+### `Relation<T>` & `isRelationLoaded()`
 
-Mirrors the `Relation<T>` helper emitted by laravel-typegen when `relations.wrap_with_relation` is enabled.
+Mirrors the `Relation<T>` helper emitted by laravel-typegen when `relations.wrap_with_relation` is enabled, with a runtime narrowing guard.
 
 ```ts
+import { isRelationLoaded, unwrapResource } from '@hemilrajput/laravel-typegen-helpers';
 import type { Relation } from '@hemilrajput/laravel-typegen-helpers';
 
 interface User {
     id: number;
-    posts: Relation<Post>;
+    posts?: Relation<Post[]>;
+}
+
+if (isRelationLoaded(user.posts)) {
+    // user.posts is narrowed to Post[]
 }
 ```
 
