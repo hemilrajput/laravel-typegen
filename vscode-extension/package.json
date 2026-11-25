@@ -2,7 +2,7 @@
     "name": "laravel-typegen",
     "displayName": "Laravel TypeGen",
     "description": "Auto-run php artisan typescript:generate on save for models tagged with #[TypeScript].",
-    "version": "2.3.0",
+    "version": "2.4.1",
     "publisher": "hemilrajput",
     "license": "MIT",
     "repository": {

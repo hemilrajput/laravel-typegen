@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-11-26
+
+### Added
+- **Selective Generation (`--only`)**: Added `--only=enums,requests,resources,models` flag to `php artisan typescript:generate`.
+- **Route Drift Check (`--check`) & Path Safety**: Added `--check` flag and `isSafePath()` validation to `php artisan typescript:routes`.
+- **Type-Only Split Imports (`type_only_imports`)**: Added `output.type_only_imports` option in `config/typegen.php` to emit `import type { ... }` for `tsconfig` `verbatimModuleSyntax` compatibility, and documented `output.split`.
+- **API Resource Helpers & Custom Names**: Added `#[TypeScript(name: '...')]` support on `JsonResource` classes and AST inference for `whenCounted()`, `whenAggregated()`, `whenNotNull()`, and `whenHas()`.
+- **Helper Utilities**: Added `isRelationLoaded()`, `unwrapResource()`, `CursorPaginatedResponse<T>`, and Inertia v2 compatibility fields in `@hemilrajput/laravel-typegen-helpers`.
+
+### Fixed
+- **Rule Specificity Precedence**: Fixed `RuleToTypeMapper` where combined rules like `string|in:light,dark,system` or `['string', new Enum(...)]` emitted `string` instead of the literal union or enum type, and guarded `ZodCompiler` against invalid string modifiers on `z.enum()`.
+- **Split Mode Imports**: Fixed `TypeScriptSplitWriter` silently dropping `import { z } from 'zod';` and missing `(ModelA | ModelB)` `MorphTo` union imports.
+- **PHPDoc Case Preservation & Protected Accessors**: Fixed `parsePhpDocType()` lowercasing PascalCase types into `any` in `ModelGenerator` and `ResourceGenerator`, and fixed `ModelGenerator` failing to reflect `protected` `Attribute::make()` accessors.
+- **Model Config & Scanner Accuracy**: Wired `include_timestamps` in live DB mode, `nullable_by_default` in fallback mode, `naming.transform`/`model_prefix`/`model_suffix` in relation references, `#[TypeScriptIgnore]` on accessors/properties/classes, tokenized `ClassScanner`, and subprocess reloading in `--watch`.
+- **FormRequest AST & Route Bindings**: Extended `FormRequestAstVisitor` and `FormRequestGenerator` fallback for local variable returns, `new Enum(...)`, `Rule::enum(...)`, and `Password::min(...)`; fixed `RoutesGenerator` resolving `{model:slug}` and `getRouteKeyName()` bindings.
+- **VS Code Extension, Helpers & Docs**: Fixed `#[TypeScript(...)]` argument matching in the VS Code extension, fixed `Relation<T>` definition and empty `index.mjs` build in `@hemilrajput/laravel-typegen-helpers`, removed the blocking VitePress preloader, and aligned docs/website metadata.
+
 ## [2.4.0] - 2026-11-19
 
 ### Added
@@ -196,6 +213,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `#[TypeScript]` attribute for opting into generation.
 - Artisan `typescript:generate` command.
 
+[2.4.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.4.0...v2.4.1
+[2.4.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.3.2...v2.4.0
 [2.3.2]: https://github.com/hemilrajput/laravel-typegen/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/hemilrajput/laravel-typegen/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/hemilrajput/laravel-typegen/compare/v2.2.3...v2.3.0
