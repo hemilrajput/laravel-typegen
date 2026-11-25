@@ -10,6 +10,8 @@ Run the routes generation command:
 
 ```bash
 php artisan typescript:routes
+# Or verify route types in CI:
+php artisan typescript:routes --check
 ```
 
 By default, this writes to `resources/js/types/routes.ts`:
@@ -26,7 +28,7 @@ export type RouteParams<T extends RouteName> =
 ```
 
 ### Strict Parameter Typing
-TypeGen automatically inspects route signatures (controllers or closures) to resolve parameter types. If a route parameter binds to an Eloquent model (e.g. `User $user`), TypeGen instantiates the model and inspects its `getKeyType()`. Auto-incrementing IDs become `number`, and UUIDs become `string` natively.
+TypeGen automatically inspects route signatures (controllers or closures) and custom route key bindings (e.g. `{post:slug}` or `getRouteKeyName()`) to resolve parameter types. If a route parameter binds to an Eloquent model's integer primary key, it becomes `number`; UUIDs, slugs, and string route keys become `string`.
 
 ### Optional Parameters
 If a route contains an optional parameter (like `{comment?}`), it will be marked optional (`?`) in TS:
@@ -100,6 +102,7 @@ Enable splitting in `config/typegen.php`:
 'output' => [
     'path' => resource_path('js/types/generated.ts'),
     'split' => true,
+    'type_only_imports' => true, // emits `import type { ... }` for verbatimModuleSyntax
 ],
 ```
 

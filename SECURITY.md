@@ -4,11 +4,12 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.4.x   | :white_check_mark: |
 | 2.3.x   | :white_check_mark: |
 | 2.2.x   | :x:                |
 | < 2.2.0 | :x:                |
 
-Versions prior to 2.2.0 contain known vulnerabilities (command injection and path traversal in code generation paths) addressed in v2.2.0. Users must upgrade to 2.2.0 or higher (recommended: latest 2.3.x).
+Versions prior to 2.2.0 contain known vulnerabilities (command injection and path traversal in code generation paths) addressed in v2.2.0. Users must upgrade to 2.2.0 or higher (recommended: latest 2.4.x).
 
 ## Reporting a Vulnerability
 

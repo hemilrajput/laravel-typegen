@@ -1,9 +1,14 @@
 # Laravel TypeGen
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/hemilrajput/laravel-typegen.svg)](https://packagist.org/packages/hemilrajput/laravel-typegen)
+[![Total Downloads](https://img.shields.io/packagist/dt/hemilrajput/laravel-typegen.svg)](https://packagist.org/packages/hemilrajput/laravel-typegen)
+[![Tests](https://github.com/hemilrajput/laravel-typegen/actions/workflows/tests.yml/badge.svg)](https://github.com/hemilrajput/laravel-typegen/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+
 > **Zero-DB CI Extraction + Automatic Zod Validation Schemas & TypeScript Types** directly from Eloquent models, Enums, FormRequests, and API Resources. Built for the modern Laravel + Inertia (React/Vue) stack.
 
 ## 📖 Documentation
-For complete documentation, guides, and setup instructions, visit [laravel-typegen.github.io](https://hemilrajput.github.io/laravel-typegen/).
+For complete documentation, guides, and setup instructions, visit [hemilrajput.github.io/laravel-typegen](https://hemilrajput.github.io/laravel-typegen/).
 
 ## Why Laravel TypeGen?
 - **Zero-DB CI Extraction**: Generate strict TypeScript interfaces in offline CI pipelines (`--skip-db-check`) without spinning up database containers.
@@ -36,7 +41,7 @@ class User extends Model
 export type UserRole = 'admin';
 
 export interface User {
-  id: number;
+  readonly id: number;
   role: UserRole; // Automatically linked!
 }
 ```
