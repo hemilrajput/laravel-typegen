@@ -2,8 +2,11 @@
 
 namespace Hemilrajput\TypeGen\Generators;
 
+use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
+use Hemilrajput\TypeGen\Support\TypeMapperHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route as RouteFacade;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class RoutesGenerator
@@ -49,7 +52,8 @@ class RoutesGenerator
                                 if (is_subclass_of($className, Model::class)) {
                                     try {
                                         $instance = new $className;
-                                        $type = $instance->getKeyType() === 'int' ? 'number' : 'string';
+                                        $bindingField = $route->bindingFieldFor($param) ?? $instance->getRouteKeyName();
+                                        $type = $this->resolveModelRouteKeyType($instance, $bindingField);
                                     } catch (\Throwable) {
                                         // ignore
                                     }
@@ -113,7 +117,7 @@ class RoutesGenerator
 
         $ziggyBlock = ($this->config['routes']['ziggy'] ?? true)
             ? "\n\nexport type RouteParamsMap = {\n{$routeParamsMapBody}\n};\n\ndeclare module 'ziggy-js' {\n  interface RouteList {\n{$ziggyRoutesBody}\n  }\n}"
-            : '';
+            : "\n\nexport type RouteParamsMap = {\n{$routeParamsMapBody}\n};";
 
         return <<<TS
 {$banner}
@@ -125,5 +129,32 @@ export type RouteParams<T extends RouteName> =
   never;{$ziggyBlock}
 
 TS;
+    }
+
+    protected function resolveModelRouteKeyType(Model $instance, string $bindingField): string
+    {
+        if ($bindingField === $instance->getKeyName()) {
+            return $instance->getKeyType() === 'int' ? 'number' : 'string';
+        }
+
+        $casts = $instance->getCasts();
+        if (isset($casts[$bindingField])) {
+            $mapped = (new CastTypeMapper($this->config['cast_map'] ?? []))->toTypeScript((string) $casts[$bindingField]);
+
+            return in_array($mapped, ['string', 'number'], true) ? $mapped : 'string';
+        }
+
+        $table = $instance->getTable();
+        if (Schema::hasTable($table)) {
+            foreach (Schema::getColumns($table) as $col) {
+                if ($col['name'] === $bindingField) {
+                    $mapped = TypeMapperHelper::dbTypeToTypeScript($col['type_name']);
+
+                    return in_array($mapped, ['string', 'number'], true) ? $mapped : 'string';
+                }
+            }
+        }
+
+        return 'string';
     }
 }

@@ -24,7 +24,8 @@ class GenerateCommand extends Command
                             {--dry-run : Print output instead of writing}
                             {--watch : Keep running and watch for file changes}
                             {--check : Check if the generated types match the existing file (useful for CI)}
-                            {--skip-db-check : Fallback to fillable and casts when database tables are missing}';
+                            {--skip-db-check : Fallback to fillable and casts when database tables are missing}
+                            {--only= : Comma-separated sources to generate (enums,requests,resources,models)}';
 
     /** @var array<string> */
     protected $aliases = ['typegen:generate'];
@@ -65,7 +66,7 @@ class GenerateCommand extends Command
                 if ($changed) {
                     $this->info('['.date('H:i:s').'] File changes detected. Regenerating...');
                     try {
-                        $this->runGeneration($classScanner, $config, $castTypeMapper, $writer);
+                        $this->runWatchSubprocess();
                     } catch (\Throwable $e) {
                         $this->error('Generation failed: '.$e->getMessage());
                     }
@@ -99,6 +100,12 @@ class GenerateCommand extends Command
             }
         }
 
+        $onlyOption = $this->option('only');
+        $only = $onlyOption
+            ? array_filter(array_map(trim(...), explode(',', strtolower((string) $onlyOption))))
+            : null;
+        $shouldRun = fn (string $source): bool => $only === null || in_array($source, $only, true);
+
         $enums = [];
         $requests = [];
         $resources = [];
@@ -106,25 +113,25 @@ class GenerateCommand extends Command
 
         // 1. Scan Enums
         $enumPath = $config['paths']['enums'] ?? null;
-        if ($enumPath && is_dir($enumPath)) {
+        if ($shouldRun('enums') && $enumPath && is_dir($enumPath)) {
             $enums = $classScanner->scan([$enumPath], $config['scan_mode'] ?? 'attribute', filter: 'enum');
         }
 
         // 2. Scan Form Requests
         $requestPath = $config['paths']['form_requests'] ?? null;
-        if ($requestPath && is_dir($requestPath)) {
+        if ($shouldRun('requests') && $requestPath && is_dir($requestPath)) {
             $requests = $classScanner->scan([$requestPath], $config['scan_mode'] ?? 'attribute');
         }
 
         // 2.5 Scan API Resources
         $resourcePath = $config['paths']['resources'] ?? null;
-        if ($resourcePath && is_dir($resourcePath)) {
+        if ($shouldRun('resources') && $resourcePath && is_dir($resourcePath)) {
             $resources = $classScanner->scan([$resourcePath], $config['scan_mode'] ?? 'attribute');
         }
 
         // 3. Scan Models
         $modelPath = $config['paths']['models'] ?? app_path('Models');
-        if (is_dir($modelPath)) {
+        if ($shouldRun('models') && is_dir($modelPath)) {
             $models = $classScanner->scan([$modelPath], $config['scan_mode'] ?? 'attribute');
         }
 
@@ -170,6 +177,9 @@ class GenerateCommand extends Command
                     $content = $formRequestGenerator->generate($request);
                 } catch (\Throwable $e) {
                     $this->warn("\n  ⚠ Skipped request {$request}: ".$e->getMessage());
+                    if ($bar) {
+                        $bar->advance();
+                    }
 
                     continue;
                 }
@@ -207,7 +217,7 @@ class GenerateCommand extends Command
 
         // Process Models
         $modelBlocks = [];
-        if (is_dir($modelPath)) {
+        if ($models !== []) {
             $relationDetector = new RelationDetector;
             $relationResolver = new RelationResolver($relationDetector);
             $modelGenerator = new ModelGenerator($castTypeMapper, $relationResolver, $config);
@@ -347,5 +357,29 @@ class GenerateCommand extends Command
         }
 
         return array_unique($files);
+    }
+
+    /**
+     * Spawn a fresh PHP process so edited model/request/enum classes are reloaded from disk.
+     */
+    protected function runWatchSubprocess(): void
+    {
+        $args = [PHP_BINARY, base_path('artisan'), 'typescript:generate'];
+
+        if ($this->option('skip-db-check')) {
+            $args[] = '--skip-db-check';
+        }
+        if ($only = $this->option('only')) {
+            $args[] = '--only='.$only;
+        }
+
+        $process = new Process($args, base_path());
+        $process->run(function (string $type, string $buffer): void {
+            $this->output->write($buffer);
+        });
+
+        if (! $process->isSuccessful()) {
+            $this->error('Generation failed with exit code '.$process->getExitCode());
+        }
     }
 }

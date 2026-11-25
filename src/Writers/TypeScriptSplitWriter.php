@@ -2,8 +2,8 @@
 
 namespace Hemilrajput\TypeGen\Writers;
 
+use Hemilrajput\TypeGen\Support\TypeMapperHelper;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 
 class TypeScriptSplitWriter
 {
@@ -14,7 +14,7 @@ class TypeScriptSplitWriter
         $path = $this->config['output']['path'];
         $dir = dirname((string) $path).'/'.pathinfo((string) $path, PATHINFO_FILENAME);
 
-        if (! $this->isSafePath($dir)) {
+        if (! TypeMapperHelper::isSafePath($dir)) {
             throw new \RuntimeException("Output path [{$dir}] is outside the project root. This is a security risk.");
         }
 
@@ -63,12 +63,13 @@ class TypeScriptSplitWriter
                 return false;
             }
         }
+        $normalizedDir = str_replace('\\', '/', (string) realpath($dir));
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'ts') {
-                $relPath = str_replace('\\', '/', substr((string) $file->getRealPath(), strlen(realpath($dir)) + 1));
+                $relPath = str_replace('\\', '/', substr((string) $file->getRealPath(), strlen($normalizedDir) + 1));
                 if (! isset($files[$relPath])) {
                     return false;
                 }
@@ -82,9 +83,16 @@ class TypeScriptSplitWriter
     protected function buildFiles(array $blocks): array
     {
         $banner = $this->config['output']['banner'] ?? '';
+        $typeOnly = (bool) ($this->config['output']['type_only_imports'] ?? false);
+        $zodEnabled = (bool) ($this->config['output']['zod'] ?? false);
+        $importPrefix = $typeOnly ? 'import type' : 'import';
         $typeMap = [];
 
         foreach ($blocks as $block) {
+            if (($block['category'] ?? '') === 'Imports') {
+                continue;
+            }
+
             if (preg_match('/export\s+(?:interface|type|enum)\s+(\w+)/', (string) $block['content'], $match)) {
                 $typeName = $match[1];
                 $typeMap[$typeName] = [
@@ -102,20 +110,23 @@ class TypeScriptSplitWriter
             $myContent = $info['content'];
 
             $imports = [];
+            if ($zodEnabled && preg_match('/\bz\./', (string) $myContent)) {
+                $imports[] = "import { z } from 'zod';";
+            }
+
             foreach ($typeMap as $otherType => $otherInfo) {
                 if ($otherType === $typeName) {
                     continue;
                 }
 
-                if (preg_match('/(?:[:<|&]\s*(?:readonly\s+)?|extends\s+|implements\s+|type\s+\w+\s*=\s*)\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
+                if (preg_match('/(?:[:<|&(,]\s*(?:readonly\s+)?|extends\s+|implements\s+|type\s+\w+\s*=\s*)\b'.preg_quote($otherType, '/').'\b/', (string) $myContent)) {
                     $otherCat = $otherInfo['category'];
-                    if ($myCat === $otherCat) {
-                        $imports[] = "import { {$otherType} } from './{$otherType}';";
-                    } else {
-                        $imports[] = "import { {$otherType} } from '../{$otherCat}/{$otherType}';";
-                    }
+                    $from = $myCat === $otherCat ? "./{$otherType}" : "../{$otherCat}/{$otherType}";
+                    $imports[] = "{$importPrefix} { {$otherType} } from '{$from}';";
                 }
             }
+
+            $imports = array_values(array_unique($imports));
 
             $fileContent = $banner;
             if ($imports !== []) {
@@ -142,30 +153,5 @@ class TypeScriptSplitWriter
         $files['index.ts'] = implode("\n", $rootLines)."\n";
 
         return $files;
-    }
-
-    protected function isSafePath(string $path): bool
-    {
-        if (function_exists('app') && app()->runningUnitTests()) {
-            return true;
-        }
-
-        $realPath = realpath($path);
-
-        if ($realPath === false) {
-            $parent = dirname($path);
-            if ($parent === $path || $parent === '.') {
-                $realPath = $path;
-            } else {
-                return $this->isSafePath($parent);
-            }
-        }
-
-        $basePath = realpath(base_path());
-
-        $realPath = str_replace('\\', '/', $realPath);
-        $basePath = str_replace('\\', '/', $basePath);
-
-        return Str::startsWith($realPath, $basePath);
     }
 }

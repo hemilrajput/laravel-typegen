@@ -10,13 +10,14 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 class RuleToTypeMapper
 {
     /**
-     * @param  array|string  $rules  raw rule list for a single field
-     * @return array{type: string, required: bool, nullable: bool}
+     * @param  array<mixed>|string  $rules  raw rule list for a single field
+     * @return array{type: string, required: bool, nullable: bool, enum_class: ?string, constraints: array<string, mixed>}
      */
     public function map(array|string $rules): array
     {
         $tokens = $this->normalize($rules);
-        $type = null;
+        $primitiveType = null;
+        $specificType = null;
         $required = false;
         $nullable = false;
         $isArray = false;
@@ -27,7 +28,7 @@ class RuleToTypeMapper
             // Object rules (Enum, In, Rule::in(...), Password, File, etc.)
             if (is_object($token)) {
                 if ($token instanceof PasswordRule) {
-                    $type ??= 'string';
+                    $primitiveType ??= 'string';
                     try {
                         $rf = new \ReflectionClass($token);
                         if ($rf->hasProperty('min')) {
@@ -50,7 +51,11 @@ class RuleToTypeMapper
                     continue;
                 }
 
-                $type ??= $this->describeObjectRule($token, $enumClass);
+                if ($token instanceof EnumRule || $token instanceof InRule) {
+                    $specificType ??= $this->describeObjectRule($token, $enumClass);
+                } else {
+                    $primitiveType ??= $this->describeObjectRule($token, $enumClass);
+                }
 
                 continue;
             }
@@ -70,22 +75,22 @@ class RuleToTypeMapper
             }
 
             match (true) {
-                $name === 'required' => $required = true,
+                in_array($name, ['required', 'present'], true) => $required = true,
                 $name === 'nullable' => $nullable = true,
                 $name === 'sometimes' => $required = false,
                 $name === 'array' => $isArray = true,
-                in_array($name, ['string', 'email', 'url', 'uuid', 'ulid', 'ip', 'ipv4', 'ipv6', 'json', 'alpha', 'alpha_num', 'alpha_dash']) => $type ??= 'string',
-                in_array($name, ['integer', 'numeric', 'decimal']) => $type ??= 'number',
-                $name === 'boolean' => $type ??= 'boolean',
-                in_array($name, ['date', 'date_format', 'before', 'after']) => $type ??= 'string',
-                in_array($name, ['file', 'image', 'mimes']) => $type ??= 'File',
-                $name === 'in' && $arg => $type ??= $this->inToUnion($arg),
-                $name === 'enum' && $arg => $this->handleEnumStringRule($arg, $type, $enumClass),
+                in_array($name, ['string', 'email', 'url', 'uuid', 'ulid', 'ip', 'ipv4', 'ipv6', 'json', 'alpha', 'alpha_num', 'alpha_dash']) => $primitiveType ??= 'string',
+                in_array($name, ['integer', 'numeric', 'decimal']) => $primitiveType ??= 'number',
+                in_array($name, ['boolean', 'accepted', 'declined'], true) => $primitiveType ??= 'boolean',
+                in_array($name, ['date', 'date_format', 'before', 'after']) => $primitiveType ??= 'string',
+                in_array($name, ['file', 'image', 'mimes']) => $primitiveType ??= 'File',
+                $name === 'in' && $arg => $specificType ??= $this->inToUnion($arg),
+                $name === 'enum' && $arg => $this->handleEnumStringRule($arg, $specificType, $enumClass),
                 default => null,
             };
         }
 
-        $type ??= 'unknown';
+        $type = $specificType ?? $primitiveType ?? 'unknown';
         if ($isArray) {
             $type = "{$type}[]";
         }
@@ -130,7 +135,7 @@ class RuleToTypeMapper
                     return 'null';
                 }
 
-                return "'".$v."'";
+                return "'".str_replace("'", "\\'", $v)."'";
             },
             explode(',', $arg),
         );

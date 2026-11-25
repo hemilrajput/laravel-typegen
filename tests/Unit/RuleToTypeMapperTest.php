@@ -1,6 +1,7 @@
 <?php
 
 use Hemilrajput\TypeGen\Mappers\RuleToTypeMapper;
+use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\In;
 
 beforeEach(fn (): RuleToTypeMapper => $this->mapper = new RuleToTypeMapper);
@@ -52,4 +53,19 @@ it('extracts constraints from rules', function (): void {
                 'regex' => '/^[a-z]+$/',
             ],
         ]);
+});
+
+enum SampleRuleStatus: string
+{
+    case Active = 'active';
+    case Inactive = 'inactive';
+}
+
+it('prioritizes in: and Enum rules over generic string/integer rules', function (): void {
+    expect($this->mapper->map('required|string|in:light,dark,system'))
+        ->toMatchArray(['type' => "'light' | 'dark' | 'system'", 'required' => true])
+        ->and($this->mapper->map(['required', 'string', new Enum(SampleRuleStatus::class)]))
+        ->toMatchArray(['type' => 'SampleRuleStatus', 'required' => true])
+        ->and($this->mapper->map(['present', 'string']))
+        ->toMatchArray(['type' => 'string', 'required' => true]);
 });

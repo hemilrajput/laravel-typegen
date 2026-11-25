@@ -2,7 +2,7 @@
 
 namespace Hemilrajput\TypeGen\Writers;
 
-use Illuminate\Support\Str;
+use Hemilrajput\TypeGen\Support\TypeMapperHelper;
 
 class TypeScriptWriter
 {
@@ -15,7 +15,7 @@ class TypeScriptWriter
 
         $dir = dirname((string) $path);
 
-        if (! $this->isSafePath($dir)) {
+        if (! TypeMapperHelper::isSafePath($dir)) {
             throw new \RuntimeException("Output path [{$dir}] is outside the project root. This is a security risk.");
         }
 
@@ -41,31 +41,5 @@ class TypeScriptWriter
         $contents = array_column($blocks, 'content');
 
         return $banner."\n".implode("\n\n", $contents)."\n";
-    }
-
-    protected function isSafePath(string $path): bool
-    {
-        if (function_exists('app') && app()->runningUnitTests()) {
-            return true;
-        }
-
-        $realPath = realpath($path);
-
-        if ($realPath === false) {
-            // Path doesn't exist yet, check its parent recursively
-            $parent = dirname($path);
-            if ($parent === $path || $parent === '.') {
-                $realPath = $path; // Fallback
-            } else {
-                return $this->isSafePath($parent);
-            }
-        }
-
-        $basePath = realpath(base_path());
-
-        $realPath = str_replace('\\', '/', $realPath);
-        $basePath = str_replace('\\', '/', $basePath);
-
-        return Str::startsWith($realPath, $basePath);
     }
 }

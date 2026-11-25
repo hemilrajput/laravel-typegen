@@ -7,6 +7,7 @@ use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use Hemilrajput\TypeGen\Relations\RelationDetector;
 use Hemilrajput\TypeGen\Relations\RelationResolver;
 use Hemilrajput\TypeGen\Scanners\ResourceAstVisitor;
+use Hemilrajput\TypeGen\Support\TypeMapperHelper;
 use Illuminate\Support\Facades\Schema;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
@@ -41,7 +42,7 @@ class ResourceGenerator
     public function generate(string $resourceClass): string
     {
         $reflectionClass = new ReflectionClass($resourceClass);
-        $name = $reflectionClass->getShortName();
+        $name = $this->resolveName($reflectionClass);
         $fields = $this->collectFields($resourceClass, $reflectionClass);
 
         $allLines = [];
@@ -55,6 +56,14 @@ class ResourceGenerator
         $opener = $style === 'type' ? ' {' : ' {';
 
         return "{$keyword}{$opener}\n{$body}\n}";
+    }
+
+    protected function resolveName(ReflectionClass $reflectionClass): string
+    {
+        $attr = $reflectionClass->getAttributes(TypeScript::class)[0] ?? null;
+        $override = $attr?->newInstance()->name;
+
+        return $override ?? $reflectionClass->getShortName();
     }
 
     /** @return array<string,string> */
@@ -75,7 +84,7 @@ class ResourceGenerator
             foreach ($matches as $match) {
                 $type = $match[1];
                 $name = $match[2];
-                $fields[$name] = $this->parsePhpDocType($type);
+                $fields[$name] = TypeMapperHelper::parsePhpDocType($type);
             }
         }
 
@@ -181,7 +190,7 @@ class ResourceGenerator
 
     protected function isOptional(Expr $expr): bool
     {
-        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && ($expr->name instanceof Identifier && in_array($expr->name->toString(), ['when', 'whenLoaded', 'mergeWhen']))) {
+        if ($expr instanceof MethodCall && $expr->var instanceof Variable && $expr->var->name === 'this' && ($expr->name instanceof Identifier && in_array($expr->name->toString(), ['when', 'whenLoaded', 'whenCounted', 'whenAggregated', 'whenNotNull', 'whenHas', 'mergeWhen'], true))) {
             return true;
         }
         if ($expr instanceof StaticCall) {
@@ -220,6 +229,18 @@ class ResourceGenerator
             $methodName = $expr->name->toString();
             if ($methodName === 'when' && isset($expr->args[1])) {
                 return $this->inferTypeFromExpr($expr->args[1]->value, $reflectionClass);
+            }
+            if ($methodName === 'whenCounted') {
+                return 'number';
+            }
+            if ($methodName === 'whenAggregated') {
+                return 'number | null';
+            }
+            if ($methodName === 'whenNotNull' && isset($expr->args[0])) {
+                return $this->inferTypeFromExpr($expr->args[0]->value, $reflectionClass);
+            }
+            if ($methodName === 'whenHas' && isset($expr->args[0]) && $expr->args[0]->value instanceof String_) {
+                return $this->inferPropertyTypeFromModel($expr->args[0]->value->value, $reflectionClass);
             }
             if ($methodName === 'whenLoaded') {
                 if (isset($expr->args[1])) {
@@ -302,7 +323,7 @@ class ResourceGenerator
                 if (Schema::hasTable($table)) {
                     foreach (Schema::getColumns($table) as $col) {
                         if ($col['name'] === $propName) {
-                            $base = $this->dbTypeToTypeScript($col['type_name']);
+                            $base = TypeMapperHelper::dbTypeToTypeScript($col['type_name']);
 
                             return $col['nullable'] ? "{$base} | null" : $base;
                         }
@@ -341,20 +362,6 @@ class ResourceGenerator
         }
 
         return null;
-    }
-
-    protected function dbTypeToTypeScript(string $typeName): string
-    {
-        $typeName = strtolower($typeName);
-
-        return match ($typeName) {
-            'integer', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'float', 'double', 'decimal', 'numeric' => 'number',
-            'boolean', 'bool' => 'boolean',
-            'array' => 'any[]',
-            'object', 'stdclass' => 'Record<string, any>',
-            'json' => 'Record<string, unknown>',
-            default => 'string',
-        };
     }
 
     protected function guessModelClass(ReflectionClass $reflectionClass): ?string
@@ -405,49 +412,5 @@ class ResourceGenerator
         }
 
         return null;
-    }
-
-    protected function parsePhpDocType(string $type): string
-    {
-        $type = trim($type);
-        $isNullable = false;
-
-        if (str_starts_with($type, '?')) {
-            $isNullable = true;
-            $type = substr($type, 1);
-        }
-
-        $types = explode('|', $type);
-        $mappedTypes = [];
-
-        foreach ($types as $t) {
-            $t = strtolower(trim($t));
-            if ($t === 'null') {
-                $isNullable = true;
-
-                continue;
-            }
-
-            $mapped = match ($t) {
-                'int', 'integer', 'float', 'double' => 'number',
-                'string' => 'string',
-                'bool', 'boolean' => 'boolean',
-                'array' => 'any[]',
-                'mixed' => 'any',
-                default => 'any',
-            };
-
-            if ($mapped === 'any' && preg_match('/^[A-Z]\w+$/', trim($t))) {
-                $mapped = trim($t);
-            }
-            $mappedTypes[] = $mapped;
-        }
-
-        $union = implode(' | ', array_unique($mappedTypes));
-        if ($isNullable) {
-            return "{$union} | null";
-        }
-
-        return $union;
     }
 }

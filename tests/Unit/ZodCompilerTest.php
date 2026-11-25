@@ -122,3 +122,15 @@ it('compiles Zod string constraints', function (): void {
 
     expect($zod)->toContain('email: z.string().min(8).max(255).email().regex(/^[a-z]+$/),');
 });
+
+it('does not attach string-only modifiers to z.enum() schemas', function (): void {
+    $tree = (new RuleTree)->build([
+        'theme' => ['required', 'string', 'min:3', 'in:light,dark,system'],
+    ]);
+
+    $compiler = new ZodCompiler(new RuleToTypeMapper);
+    $zod = $compiler->compile($tree, 2);
+
+    expect($zod)->toContain("theme: z.enum(['light', 'dark', 'system']),")
+        ->and($zod)->not->toContain('.min(');
+});

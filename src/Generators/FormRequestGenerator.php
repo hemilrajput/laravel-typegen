@@ -9,10 +9,17 @@ use Hemilrajput\TypeGen\Mappers\RuleTree;
 use Hemilrajput\TypeGen\Scanners\FormRequestAstVisitor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum as EnumRule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\LNumber;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\NodeTraverser;
 use PhpParser\ParserFactory;
@@ -186,13 +193,14 @@ class FormRequestGenerator
                 return null;
             }
 
-            return $this->parseAstRulesArray($visitor->rulesReturn);
+            return $this->parseAstRulesArray($visitor->rulesReturn, $visitor->namespace, $visitor->uses);
         } catch (\Throwable) {
             return null;
         }
     }
 
-    protected function parseAstRulesArray(Array_ $array): array
+    /** @param array<string, string> $uses */
+    protected function parseAstRulesArray(Array_ $array, string $namespace = '', array $uses = []): array
     {
         $rules = [];
         foreach ($array->items as $item) {
@@ -200,13 +208,14 @@ class FormRequestGenerator
                 continue;
             }
             $field = $item->key->value;
-            $rules[$field] = $this->parseAstRuleValue($item->value);
+            $rules[$field] = $this->parseAstRuleValue($item->value, $namespace, $uses);
         }
 
         return $rules;
     }
 
-    protected function parseAstRuleValue(Expr $expr): mixed
+    /** @param array<string, string> $uses */
+    protected function parseAstRuleValue(Expr $expr, string $namespace = '', array $uses = []): mixed
     {
         if ($expr instanceof String_) {
             return $expr->value;
@@ -217,22 +226,10 @@ class FormRequestGenerator
             foreach ($expr->items as $item) {
                 if ($item->value instanceof String_) {
                     $itemRules[] = $item->value->value;
-                } elseif ($item->value instanceof StaticCall) {
-                    $method = $item->value->name instanceof Identifier ? $item->value->name->toString() : '';
-                    if ($method === 'in' && isset($item->value->args[0]) && $item->value->args[0]->value instanceof Array_) {
-                        $values = [];
-                        foreach ($item->value->args[0]->value->items as $inItem) {
-                            if ($inItem->value instanceof String_) {
-                                $values[] = $inItem->value->value;
-                            }
-                        }
-                        if ($values !== []) {
-                            $itemRules[] = Rule::in($values);
-
-                            continue;
-                        }
-                    }
-                    $itemRules[] = 'string';
+                } elseif ($item->value instanceof New_) {
+                    $itemRules[] = $this->parseAstNewRule($item->value, $namespace, $uses);
+                } elseif ($item->value instanceof StaticCall || $item->value instanceof MethodCall) {
+                    $itemRules[] = $this->parseAstCallRule($item->value, $namespace, $uses);
                 } else {
                     $itemRules[] = 'string';
                 }
@@ -241,7 +238,104 @@ class FormRequestGenerator
             return $itemRules;
         }
 
+        if ($expr instanceof New_) {
+            return [$this->parseAstNewRule($expr, $namespace, $uses)];
+        }
+
+        if ($expr instanceof StaticCall || $expr instanceof MethodCall) {
+            return [$this->parseAstCallRule($expr, $namespace, $uses)];
+        }
+
         return 'string';
+    }
+
+    /** @param array<string, string> $uses */
+    protected function parseAstNewRule(New_ $expr, string $namespace, array $uses): mixed
+    {
+        if ($expr->class instanceof Name) {
+            $className = $this->resolveAstClassName($expr->class->toString(), $namespace, $uses);
+            if ($className === EnumRule::class || $expr->class->getLast() === 'Enum') {
+                $enumClass = $this->resolveAstClassConst($expr->args[0]->value ?? null, $namespace, $uses);
+                if ($enumClass !== null && enum_exists($enumClass)) {
+                    return new EnumRule($enumClass);
+                }
+            }
+        }
+
+        return 'string';
+    }
+
+    /** @param array<string, string> $uses */
+    protected function parseAstCallRule(Expr $expr, string $namespace, array $uses): mixed
+    {
+        $current = $expr;
+        while ($current instanceof MethodCall) {
+            $current = $current->var;
+        }
+
+        if (! $current instanceof StaticCall) {
+            return 'string';
+        }
+
+        $method = $current->name instanceof Identifier ? $current->name->toString() : '';
+        $classLast = $current->class instanceof Name ? $current->class->getLast() : '';
+
+        if ($method === 'in' && isset($current->args[0]) && $current->args[0]->value instanceof Array_) {
+            $values = [];
+            foreach ($current->args[0]->value->items as $inItem) {
+                if ($inItem->value instanceof String_) {
+                    $values[] = $inItem->value->value;
+                }
+            }
+            if ($values !== []) {
+                return Rule::in($values);
+            }
+        }
+
+        if ($method === 'enum') {
+            $enumClass = $this->resolveAstClassConst($current->args[0]->value ?? null, $namespace, $uses);
+            if ($enumClass !== null && enum_exists($enumClass)) {
+                return new EnumRule($enumClass);
+            }
+        }
+
+        if ($classLast === 'Password' && $method === 'min' && isset($current->args[0])) {
+            $argVal = $current->args[0]->value;
+            if ($argVal instanceof LNumber) {
+                return PasswordRule::min($argVal->value);
+            }
+        }
+
+        return 'string';
+    }
+
+    /** @param array<string, string> $uses */
+    protected function resolveAstClassConst(?Expr $expr, string $namespace, array $uses): ?string
+    {
+        if ($expr instanceof ClassConstFetch && $expr->class instanceof Name) {
+            return $this->resolveAstClassName($expr->class->toString(), $namespace, $uses);
+        }
+
+        return null;
+    }
+
+    /** @param array<string, string> $uses */
+    protected function resolveAstClassName(string $name, string $namespace, array $uses): string
+    {
+        if (str_starts_with($name, '\\')) {
+            return ltrim($name, '\\');
+        }
+
+        $firstSegment = explode('\\', $name, 2)[0];
+        if (isset($uses[$firstSegment])) {
+            if (! str_contains($name, '\\')) {
+                return $uses[$firstSegment];
+            }
+
+            return $uses[$firstSegment].'\\'.explode('\\', $name, 2)[1];
+        }
+
+        return $namespace !== '' ? $namespace.'\\'.$name : $name;
     }
 
     protected function renderTree(array $tree, int $indent): string

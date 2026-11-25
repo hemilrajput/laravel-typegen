@@ -6,6 +6,7 @@ use Hemilrajput\TypeGen\Attributes\TypeScript;
 use Hemilrajput\TypeGen\Attributes\TypeScriptIgnore;
 use Hemilrajput\TypeGen\Mappers\CastTypeMapper;
 use Hemilrajput\TypeGen\Relations\RelationResolver;
+use Hemilrajput\TypeGen\Support\TypeMapperHelper;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -68,10 +69,20 @@ class ModelGenerator
             return $override;
         }
 
-        $base = $reflectionClass->getShortName();
+        return $this->formatModelName($reflectionClass->getShortName());
+    }
+
+    protected function formatModelName(string $base): string
+    {
+        $transform = strtolower((string) ($this->config['naming']['transform'] ?? 'pascal'));
+        $transformed = match ($transform) {
+            'snake' => Str::snake($base),
+            'camel' => Str::camel($base),
+            default => $base,
+        };
 
         return ($this->config['naming']['model_prefix'] ?? '')
-            .$base
+            .$transformed
             .($this->config['naming']['model_suffix'] ?? '');
     }
 
@@ -81,6 +92,13 @@ class ModelGenerator
         $fields = [];
         $table = $model->getTable();
 
+        // Collect property-level #[TypeScriptIgnore]
+        foreach ($reflectionClass->getProperties() as $property) {
+            if ($property->getAttributes(TypeScriptIgnore::class) !== []) {
+                $ignore[] = $property->getName();
+            }
+        }
+
         // 0. Parse PHPDoc @property annotations
         $docComment = $reflectionClass->getDocComment();
         if ($docComment) {
@@ -89,7 +107,7 @@ class ModelGenerator
                 $type = $match[1];
                 $name = $match[2];
                 if (! in_array($name, $ignore, true)) {
-                    $fields[$name] = $this->parsePhpDocType($type);
+                    $fields[$name] = TypeMapperHelper::parsePhpDocType($type);
                 }
             }
         }
@@ -97,6 +115,8 @@ class ModelGenerator
         $casts = $model->getCasts();
         $hidden = $model->getHidden();
         $includeHidden = $this->config['include_hidden'] ?? false;
+        $includeTimestamps = $this->config['include_timestamps'] ?? true;
+        $nullableByDefault = $this->config['nullable_by_default'] ?? false;
         $hasTable = Schema::hasTable($table);
 
         if (! $hasTable) {
@@ -120,6 +140,9 @@ class ModelGenerator
                 }
                 if (! isset($fields[$attr])) {
                     $baseType = isset($casts[$attr]) ? $this->mapper->toTypeScript($casts[$attr]) : 'string';
+                    if ($nullableByDefault && ! str_contains($baseType, 'null')) {
+                        $baseType .= ' | null';
+                    }
                     $fields[$attr] = $baseType;
                 }
             }
@@ -133,28 +156,38 @@ class ModelGenerator
                 }
                 if (! isset($fields[$attr])) {
                     $readonly = $model->isFillable($attr) ? '' : 'readonly ';
-                    $fields[$attr] = $readonly.$this->mapper->toTypeScript($cast);
+                    $baseType = $this->mapper->toTypeScript($cast);
+                    if ($nullableByDefault && $attr !== $keyName && ! str_contains($baseType, 'null')) {
+                        $baseType .= ' | null';
+                    }
+                    $fields[$attr] = $readonly.$baseType;
                 }
             }
 
-            if (($this->config['include_timestamps'] ?? true) && $model->usesTimestamps()) {
+            if ($includeTimestamps && $model->usesTimestamps()) {
                 $created = $model->getCreatedAtColumn();
                 $updated = $model->getUpdatedAtColumn();
-                if ($created && ! isset($fields[$created])) {
+                if ($created && ! in_array($created, $ignore, true) && ! isset($fields[$created])) {
                     $fields[$created] = 'readonly string | null';
                 }
-                if ($updated && ! isset($fields[$updated])) {
+                if ($updated && ! in_array($updated, $ignore, true) && ! isset($fields[$updated])) {
                     $fields[$updated] = 'readonly string | null';
                 }
             }
         } else {
             $dbColumns = Schema::getColumns($table);
+            $timestampCols = $model->usesTimestamps()
+                ? array_filter([$model->getCreatedAtColumn(), $model->getUpdatedAtColumn()])
+                : [];
 
             // 1. Process Database Columns
             foreach ($dbColumns as $dbColumn) {
                 $attr = $dbColumn['name'];
 
                 if (in_array($attr, $ignore, true)) {
+                    continue;
+                }
+                if (! $includeTimestamps && in_array($attr, $timestampCols, true)) {
                     continue;
                 }
                 if (! $includeHidden && in_array($attr, $hidden, true)) {
@@ -164,7 +197,7 @@ class ModelGenerator
                 if (isset($casts[$attr])) {
                     $baseType = $this->mapper->toTypeScript($casts[$attr]);
                 } else {
-                    $baseType = $this->dbTypeToTypeScript($dbColumn['type_name']);
+                    $baseType = TypeMapperHelper::dbTypeToTypeScript($dbColumn['type_name']);
                 }
 
                 $readonly = $model->isFillable($attr) ? '' : 'readonly ';
@@ -193,6 +226,16 @@ class ModelGenerator
                 continue;
             }
 
+            $studly = Str::studly($appended);
+            $modernMethodName = Str::camel($appended);
+            $legacyMethodName = "get{$studly}Attribute";
+
+            if (($reflectionClass->hasMethod($modernMethodName) && $reflectionClass->getMethod($modernMethodName)->getAttributes(TypeScriptIgnore::class) !== [])
+                || ($reflectionClass->hasMethod($legacyMethodName) && $reflectionClass->getMethod($legacyMethodName)->getAttributes(TypeScriptIgnore::class) !== [])
+            ) {
+                continue;
+            }
+
             if (isset($casts[$appended])) {
                 $fields[$appended] = 'readonly '.$this->mapper->toTypeScript($casts[$appended]);
 
@@ -200,21 +243,19 @@ class ModelGenerator
             }
 
             $inferred = 'any';
-            $studly = Str::studly($appended);
 
             // Modern Accessors (Attribute::make)
-            $modernMethodName = Str::camel($appended);
             if (method_exists($model, $modernMethodName)) {
                 $rm = new \ReflectionMethod($model, $modernMethodName);
                 $rt = $rm->getReturnType();
                 if ($rt instanceof \ReflectionNamedType && ltrim($rt->getName(), '\\') === Attribute::class) {
                     try {
-                        $attribute = $model->{$modernMethodName}();
+                        $attribute = $rm->invoke($model);
                         if ($attribute->get) {
                             $closureReflection = new \ReflectionFunction($attribute->get);
                             $closureRt = $closureReflection->getReturnType();
                             if ($closureRt instanceof \ReflectionNamedType) {
-                                $inferred = $this->dbTypeToTypeScript($closureRt->getName());
+                                $inferred = TypeMapperHelper::dbTypeToTypeScript($closureRt->getName());
                                 if ($closureRt->allowsNull()) {
                                     $inferred .= ' | null';
                                 }
@@ -227,12 +268,11 @@ class ModelGenerator
             }
 
             // Legacy Accessors (getXAttribute)
-            $methodName = "get{$studly}Attribute";
-            if ($inferred === 'any' && method_exists($model, $methodName)) {
-                $rm = new \ReflectionMethod($model, $methodName);
+            if ($inferred === 'any' && method_exists($model, $legacyMethodName)) {
+                $rm = new \ReflectionMethod($model, $legacyMethodName);
                 $rt = $rm->getReturnType();
                 if ($rt instanceof \ReflectionNamedType) {
-                    $inferred = $this->dbTypeToTypeScript($rt->getName());
+                    $inferred = TypeMapperHelper::dbTypeToTypeScript($rt->getName());
                     if ($rt->allowsNull()) {
                         $inferred .= ' | null';
                     }
@@ -243,64 +283,6 @@ class ModelGenerator
         }
 
         return $fields;
-    }
-
-    protected function dbTypeToTypeScript(string $typeName): string
-    {
-        $typeName = strtolower($typeName);
-
-        return match ($typeName) {
-            'integer', 'int', 'tinyint', 'smallint', 'mediumint', 'bigint', 'float', 'double', 'decimal', 'numeric' => 'number',
-            'boolean', 'bool' => 'boolean',
-            'array' => 'any[]',
-            'object', 'stdclass' => 'Record<string, any>',
-            'json' => 'Record<string, unknown>',
-            default => 'string',
-        };
-    }
-
-    protected function parsePhpDocType(string $type): string
-    {
-        $type = trim($type);
-        $isNullable = false;
-
-        if (str_starts_with($type, '?')) {
-            $isNullable = true;
-            $type = substr($type, 1);
-        }
-
-        $types = explode('|', $type);
-        $mappedTypes = [];
-
-        foreach ($types as $t) {
-            $t = strtolower(trim($t));
-            if ($t === 'null') {
-                $isNullable = true;
-
-                continue;
-            }
-
-            $mapped = match ($t) {
-                'int', 'integer', 'float', 'double' => 'number',
-                'string' => 'string',
-                'bool', 'boolean' => 'boolean',
-                'array' => 'any[]',
-                'mixed' => 'any',
-                default => 'any',
-            };
-
-            if ($mapped === 'any' && preg_match('/^[A-Z]\w+$/', trim($t))) {
-                $mapped = trim($t);
-            }
-            $mappedTypes[] = $mapped;
-        }
-
-        $union = implode(' | ', array_unique($mappedTypes));
-        if ($isNullable) {
-            return "{$union} | null";
-        }
-
-        return $union;
     }
 
     /**
@@ -377,7 +359,7 @@ class ModelGenerator
                     $discovered[] = $morphClass;
                 }
                 $union = implode(' | ', array_map(
-                    class_basename(...),
+                    fn (string $morphClass): string => $this->formatModelName(class_basename($morphClass)),
                     $resolved['morph_types']
                 ));
 
@@ -398,7 +380,7 @@ class ModelGenerator
         }
 
         $discovered[] = $resolved['related'];
-        $shortName = class_basename($resolved['related']);
+        $shortName = $this->formatModelName(class_basename($resolved['related']));
 
         if ($resolved['kind'] === 'collection') {
             $type = "{$shortName}[]";
